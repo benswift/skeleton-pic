@@ -76,6 +76,11 @@ all : fpic2 cpic2
 
 special: fpic2_c cpic2_f
 
+shared: libpic2.dylib
+
+libpic2.dylib: cpic2.o cpush2.o dtimer.o
+	$(CC) $(CCOPTS) -shared -o libpic2.dylib cpic2.o cpush2.o dtimer.o
+
 fpic2 : fpic2.o fpush2.o dtimer.o
 	$(FC90) $(OPTS90) -o fpic2 fpic2.o fpush2.o push2_h.o \
         dtimer.o
