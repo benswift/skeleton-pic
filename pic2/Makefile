@@ -125,4 +125,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fpic2 cpic2 fpic2_c cpic2_f
+	rm -f fpic2 cpic2 fpic2_c cpic2_f libpic2.dylib
