@@ -70,11 +70,18 @@ CCOPTS = -O3 -Wall -std=c99
 
 #
 
+SHLIB_EXT=dylib
+
 # Linkage rules
 
 all : fbpic2 cbpic2
 
 special: fbpic2_c cbpic2_f
+
+shared: libbpic2.$(SHLIB_EXT)
+
+libbpic2.dylib: bpic2.o bpush2.o dtimer.o
+	$(CC) $(CCOPTS) -shared -o libbpic2.dylib bpic2.o bpush2.o dtimer.o
 
 fbpic2 : fbpic2.o fbpush2.o dtimer.o
 	$(FC90) $(OPTS90) -o fbpic2 fbpic2.o fbpush2.o bpush2_h.o \
@@ -120,4 +127,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fbpic2 cbpic2 fbpic2_c cbpic2_f
+	rm -f fbpic2 cbpic2 fbpic2_c cbpic2_f libbpic2.$(SHLIB_EXT)
