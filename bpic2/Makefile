@@ -80,8 +80,8 @@ special: fbpic2_c cbpic2_f
 
 shared: libbpic2.$(SHLIB_EXT)
 
-libbpic2.dylib: bpic2.o bpush2.o dtimer.o
-	$(CC) $(CCOPTS) -shared -o libbpic2.dylib bpic2.o bpush2.o dtimer.o
+libbpic2.$(SHLIB_EXT): bpic2.o bpush2.o dtimer.o
+	$(CC) $(CCOPTS) -shared -o libbpic2.$(SHLIB_EXT) bpic2.o bpush2.o dtimer.o
 
 fbpic2 : fbpic2.o fbpush2.o dtimer.o
 	$(FC90) $(OPTS90) -o fbpic2 fbpic2.o fbpush2.o bpush2_h.o \
