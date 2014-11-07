@@ -1,5 +1,10 @@
 # Parallel Plasma PIC Codes
 
+by Viktor K. Decyk
+
+copyright 1994-2013, regents of the university of california
+
+
 Skeleton Particle-in-Cell (PIC) Codes: These skeleton codes contain
 the critical algorithms used in various PIC codes, but do not contain
 the wide range of inputs, diagnostics, and outputs normally found in
