@@ -1,9 +1,8 @@
-# Parallel Plasma PIC Codes
+# Parallel Plasma Skeleton PIC Codes
 
 by Viktor K. Decyk
 
-copyright 1994-2013, regents of the university of california
-
+Copyright 1994-2013, Regents of the University of California
 
 Skeleton Particle-in-Cell (PIC) Codes: These skeleton codes contain
 the critical algorithms used in various PIC codes, but do not contain
