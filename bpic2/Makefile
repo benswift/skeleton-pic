@@ -74,7 +74,7 @@ SHLIB_EXT=dylib
 
 # Linkage rules
 
-all : fbpic2 cbpic2
+all : fbpic2 cbpic2 shared
 
 special: fbpic2_c cbpic2_f
 
