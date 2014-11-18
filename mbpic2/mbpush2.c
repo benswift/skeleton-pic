@@ -399,8 +399,8 @@ void cgbppush23l(float ppart[], float fxy[], float bxy[], int kpic[],
    nppmx = maximum number of particles in tile
    nx/ny = system length in x/y direction
    mx/my = number of grids in sorting cell in x/y
-   nxv = first dimension of field arrays, must be >= nx+1
-   nyv = second dimension of field arrays, must be >= ny+1
+   nxv = second dimension of field arrays, must be >= nx+1
+   nyv = third dimension of field arrays, must be >= ny+1
    mx1 = (system length in x direction - 1)/mx + 1
    mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
    ipbc = particle boundary condition = (0,1,2,3) =
@@ -667,8 +667,8 @@ void cgbppushf23l(float ppart[], float fxy[], float bxy[], int kpic[],
    nppmx = maximum number of particles in tile
    nx/ny = system length in x/y direction
    mx/my = number of grids in sorting cell in x/y
-   nxv = first dimension of field arrays, must be >= nx+1
-   nyv = second dimension of field arrays, must be >= ny+1
+   nxv = second dimension of field arrays, must be >= nx+1
+   nyv = third dimension of field arrays, must be >= ny+1
    mx1 = (system length in x direction - 1)/mx + 1
    mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
    ntmax = size of hole array for particles leaving tiles
@@ -978,8 +978,8 @@ void cgrbppush23l(float ppart[], float fxy[], float bxy[], int kpic[],
    nppmx = maximum number of particles in tile
    nx/ny = system length in x/y direction
    mx/my = number of grids in sorting cell in x/y
-   nxv = first dimension of field arrays, must be >= nx+1
-   nyv = second dimension of field arrays, must be >= ny+1
+   nxv = second dimension of field arrays, must be >= nx+1
+   nyv = third dimension of field arrays, must be >= ny+1
    mx1 = (system length in x direction - 1)/mx + 1
    mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
    ipbc = particle boundary condition = (0,1,2,3) =
@@ -1261,8 +1261,8 @@ void cgrbppushf23l(float ppart[], float fxy[], float bxy[], int kpic[],
    nppmx = maximum number of particles in tile
    nx/ny = system length in x/y direction
    mx/my = number of grids in sorting cell in x/y
-   nxv = first dimension of field arrays, must be >= nx+1
-   nyv = second dimension of field arrays, must be >= ny+1
+   nxv = second dimension of field arrays, must be >= nx+1
+   nyv = third dimension of field arrays, must be >= ny+1
    mx1 = (system length in x direction - 1)/mx + 1
    mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
    ntmax = size of hole array for particles leaving tiles
@@ -3618,7 +3618,7 @@ reduction(+:sum1,sum2)
    sum1 += ws;
    sum2 += wp;
    *wf = sum1*(float) (nx*ny);
-   *wm = sum2*wp*(float) (nx*ny);
+   *wm = sum2*c2*(float) (nx*ny);
    return;
 }
 

@@ -327,8 +327,8 @@ c idimp = size of phase space = 5
 c nppmx = maximum number of particles in tile
 c nx/ny = system length in x/y direction
 c mx/my = number of grids in sorting cell in x/y
-c nxv = first dimension of field arrays, must be >= nx+1
-c nyv = second dimension of field arrays, must be >= ny+1
+c nxv = second dimension of field arrays, must be >= nx+1
+c nyv = third dimension of field arrays, must be >= ny+1
 c mx1 = (system length in x direction - 1)/mx + 1
 c mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
 c ipbc = particle boundary condition = (0,1,2,3) =
@@ -587,8 +587,8 @@ c idimp = size of phase space = 5
 c nppmx = maximum number of particles in tile
 c nx/ny = system length in x/y direction
 c mx/my = number of grids in sorting cell in x/y
-c nxv = first dimension of field arrays, must be >= nx+1
-c nyv = second dimension of field arrays, must be >= ny+1
+c nxv = second dimension of field arrays, must be >= nx+1
+c nyv = third dimension of field arrays, must be >= ny+1
 c mx1 = (system length in x direction - 1)/mx + 1
 c mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
 c ntmax = size of hole array for particles leaving tiles
@@ -886,8 +886,8 @@ c idimp = size of phase space = 5
 c nppmx = maximum number of particles in tile
 c nx/ny = system length in x/y direction
 c mx/my = number of grids in sorting cell in x/y
-c nxv = first dimension of field arrays, must be >= nx+1
-c nyv = second dimension of field arrays, must be >= ny+1
+c nxv = second dimension of field arrays, must be >= nx+1
+c nyv = third dimension of field arrays, must be >= ny+1
 c mx1 = (system length in x direction - 1)/mx + 1
 c mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
 c ipbc = particle boundary condition = (0,1,2,3) =
@@ -1163,8 +1163,8 @@ c idimp = size of phase space = 5
 c nppmx = maximum number of particles in tile
 c nx/ny = system length in x/y direction
 c mx/my = number of grids in sorting cell in x/y
-c nxv = first dimension of field arrays, must be >= nx+1
-c nyv = second dimension of field arrays, must be >= ny+1
+c nxv = second dimension of field arrays, must be >= nx+1
+c nyv = third dimension of field arrays, must be >= ny+1
 c mx1 = (system length in x direction - 1)/mx + 1
 c mxy1 = mx1*my1, where my1 = (system length in y direction - 1)/my + 1
 c ntmax = size of hole array for particles leaving tiles
