@@ -119,12 +119,19 @@ LOPTS = -lm
 #LEGACY =
 
 #
+SHLIB_EXT=dylib
 
 # Linkage rules
 
-all : fpbpic2 cpbpic2
+all : fpbpic2 cpbpic2 shared
 
 special: fpbpic2_c cpbpic2_f
+
+shared: libpbpic2.$(SHLIB_EXT)
+
+libpbpic2.$(SHLIB_EXT) : cpbpic2.o cpbpush2.o cpplib2.o dtimer.o
+	$(MPICC) $(CCOPTS) $(LOPTS) -shared -o libpbpic2.$(SHLIB_EXT) \
+        cpbpic2.o cpbpush2.o cpplib2.o dtimer.o
 
 # Version using Fortran77 pplib2.f
 #fpbpic2 : fpbpic2.o fpbpush2.o fpplib2.o dtimer.o
