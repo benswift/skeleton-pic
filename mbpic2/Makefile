@@ -65,13 +65,13 @@
 
 # OpenMP
 MPFC = gfortran -fopenmp
-MPCC = gcc -fopenmp
+MPCC = gcc-4.9 -fopenmp
 #NoOpenMP
 #MPFC = gfortran
 #MPCC = gcc
 
 FC90 = gfortran
-CC = gcc
+CC = gcc-4.9
 
 OPTS90 = -O3
 #OPTS90 = -O3 -fdefault-real-8 -fdefault-double-8
@@ -120,11 +120,18 @@ LEGACY =
 
 #
 
+SHLIB_EXT=dylib
+
 # Linkage rules
 
-all : fmbpic2 cmbpic2
+all : fmbpic2 cmbpic2 shared
 
 special: fmbpic2_c cmbpic2_f
+
+shared: libmbpic2.$(SHLIB_EXT)
+
+libmbpic2.$(SHLIB_EXT) : cmbpic2.o cmbpush2.o complib.o dtimer.o
+	$(MPCC) $(CCOPTS) -shared -o libmbpic2.$(SHLIB_EXT) cmbpic2.o cmbpush2.o complib.o dtimer.o -lm
 
 fmbpic2 : fmbpic2.o fmbpush2.o fomplib.o dtimer.o
 	$(MPFC) $(OPTS90) -o fmbpic2 fmbpic2.o fmbpush2.o fomplib.o \
@@ -185,4 +192,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fmbpic2 cmbpic2 fmbpic2_c cmbpic2_f
+	rm -f fmbpic2 cmbpic2 fmbpic2_c cmbpic2_f libmbpic2.$(SHLIB_EXT)
