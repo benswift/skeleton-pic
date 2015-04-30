@@ -67,7 +67,7 @@
 MPIFC = mpif90
 MPICC = mpicc
 
-CC = gcc
+CC = clang
 
 OPTS90 = -O3
 #OPTS90 = -O3 -fdefault-real-8 -fdefault-double-8
