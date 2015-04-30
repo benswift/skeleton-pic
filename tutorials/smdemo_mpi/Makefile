@@ -36,6 +36,8 @@ all: mpi
 
 mpi: cmpitest fmpitest
 
+shared: libmpimain.dylib libmpitest.dylib
+
 #MPI
 cmpitest : cmpitest.o $(MPIOBJS)
 	mpicc $(CCOPTS) $(LOPTS) -o cmpitest cmpitest.o \
@@ -44,6 +46,12 @@ cmpitest : cmpitest.o $(MPIOBJS)
 fmpitest : fmpitest.o $(FMPIOBJS)
 	mpif90 $(OPTS90) $(LOPTS) -o fmpitest fmpitest.o \
       $(FMPIOBJS)
+
+libmpimain.dylib 	: cmpimain.o $(MPIOBJS)
+	mpicc -shared $(CCOPTS) $(LOPTS) -o libmpimain.dylib $(MPIOBJS)
+
+libmpitest.dylib 	: cmpitest.o $(MPIOBJS)
+	mpicc -shared $(CCOPTS) $(LOPTS) -o libmpitest.dylib cmpitest.o $(MPIOBJS)
 
 # Compilation rules
 
