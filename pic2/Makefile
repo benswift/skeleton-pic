@@ -36,7 +36,7 @@
 # Makefile gfortran compiler with Linux
 
 FC90 = gfortran
-CC = gcc
+CC = clang
 
 OPTS90 = -O3
 #OPTS90 = -O3 -fdefault-real-8 -fdefault-double-8
