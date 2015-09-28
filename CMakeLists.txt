@@ -1,20 +1,19 @@
-# CMakeLists files in this project can
-# refer to the root source directory of the project as ${HELLO_SOURCE_DIR} and
-# to the root binary directory of the project as ${HELLO_BINARY_DIR}.
-cmake_minimum_required (VERSION 2.8.11)
-project (PIC)
+cmake_minimum_required (VERSION 3.0)
 
-# serial codes
-add_subdirectory (pic2)
-add_subdirectory (bpic2)
+project(skeleton_PIC)
 
-## basic parallel (level 1) 
-# OpenMP
-add_subdirectory (mbpic2)
-add_subdirectory (mpic2)
-# MPI
-add_subdirectory (pbpic2)
-add_subdirectory (ppic2)
-# SIMD
-add_subdirectory (vbpic2)
-add_subdirectory (vpic2)
+# MPI required for all sub-projects
+find_package(MPI REQUIRED)
+
+add_library(pic2 SHARED
+  pic2/dtimer.c
+  pic2/push2.c
+  pic2/pic2.c
+  pic2/ompi_comm_addr.c)
+
+target_include_directories(pic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
+target_link_libraries(pic2 PRIVATE ${MPI_C_LIBRARIES})  
+
+install(TARGETS pic2
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib)
