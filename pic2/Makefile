@@ -124,7 +124,7 @@ fpic2_c.o : pic2_c.f90
 	$(FC90) $(OPTS90) -o fpic2_c.o -c pic2_c.f90
 
 clean :
-	rm -f *.o *.mod
+	rm -f *.o *.mod *.dylib
 
 clobber: clean
 	rm -f fpic2 cpic2 fpic2_c cpic2_f libpic2.$(SHLIB_EXT)
