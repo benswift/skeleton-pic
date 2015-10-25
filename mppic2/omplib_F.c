@@ -5,7 +5,7 @@ void init_omp_(int *nth);
 
 void setnthsize_(int *nth);
 
-int cgetnthsize_();
+int getnthsize_();
 
 /* Interfaces to C */
 
@@ -20,5 +20,5 @@ void csetnthsize(int nth) {
 }
 
 int cgetnthsize() {
-   return cgetnthsize_();
+   return getnthsize_();
 }

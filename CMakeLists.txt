@@ -88,22 +88,33 @@ install(TARGETS bpic2
 #   LIBRARY DESTINATION lib
 #   RUNTIME DESTINATION lib)
 
-# # mppic2
+# mppic2
 
-# add_library(mppic2 SHARED
-#   mppic2/dtimer.c
-#   mppic2/mppush2.c
-#   mppic2/omplib.c
-#   mppic2/mppic2.c
-#   ompi_comm_addr.c)
+# for mppic2, need to specify an openmp-enabled compiler through the CC variable, e.g.
 
-# target_compile_options(mbpic2 PRIVATE ${OpenMP_C_FLAGS})  
-# target_include_directories(mppic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
-# target_link_libraries(mppic2 PRIVATE ${MPI_C_LIBRARIES})  
+# CC=/usr/local/Cellar/gcc/5.2.0/bin/gcc-5 cmake .. && make mppic2
 
-# install(TARGETS mppic2
-#   LIBRARY DESTINATION lib
-#   RUNTIME DESTINATION lib)
+add_library(mppic2 SHARED
+  mppic2/dtimer.c
+  mppic2/mppic2.c
+  mppic2/mpplib2.c
+  mppic2/mppush2.c
+  mppic2/omplib.c
+  # mppic2/ppic2.c
+  # mppic2/ppush2.c
+  ompi_comm_addr.c)
+
+# MPI
+target_include_directories(mppic2 PRIVATE ${MPI_C_INCLUDE_PATH})
+target_link_libraries(mppic2 PRIVATE ${MPI_C_LIBRARIES})
+
+# OpenMP
+target_compile_options(mppic2 PRIVATE -openmp)
+target_link_libraries(mppic2 PRIVATE gomp)
+
+install(TARGETS mppic2
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib)
 
 # pbpic2
 
