@@ -4,7 +4,6 @@ project(skeleton_PIC)
 
 # MPI required for all sub-projects
 find_package(MPI REQUIRED)
-# find_package(OpenMP REQUIRED)
 
 ########################
 # here are the targets #
@@ -90,9 +89,17 @@ install(TARGETS bpic2
 
 # mppic2
 
-# for mppic2, need to specify an openmp-enabled compiler through the CC variable, e.g.
+# for mppic2, need to specify an openmp-enabled compiler through the CC/CXX variables, e.g.
 
-# CC=/usr/local/Cellar/gcc/5.2.0/bin/gcc-5 cmake .. && make mppic2
+# GCC
+
+# CC=/usr/local/Cellar/gcc/5.2.0/bin/gcc-5 CXX=/usr/local/Cellar/gcc/5.2.0/bin/g++-5 cmake .. && make mppic2
+
+# Clang
+
+# CC=clang-omp CXX=clang-omp++ cmake .. && make mppic2
+
+find_package(OpenMP REQUIRED)
 
 add_library(mppic2 SHARED
   mppic2/dtimer.c
@@ -109,8 +116,9 @@ target_include_directories(mppic2 PRIVATE ${MPI_C_INCLUDE_PATH})
 target_link_libraries(mppic2 PRIVATE ${MPI_C_LIBRARIES})
 
 # OpenMP
-target_compile_options(mppic2 PRIVATE -openmp)
-target_link_libraries(mppic2 PRIVATE gomp)
+target_compile_options(mppic2 PRIVATE ${OpenMP_C_FLAGS})
+target_link_libraries(mppic2 PRIVATE iomp5) # if using clang/libiomp
+# target_link_libraries(mppic2 PRIVATE gomp) # if using clang/libiomp
 
 install(TARGETS mppic2
   LIBRARY DESTINATION lib
