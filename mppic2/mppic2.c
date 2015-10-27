@@ -11,7 +11,7 @@
 
 void dtimer(double *time, struct timeval *itime, int icntrl);
 
-int mppic2_main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 /* indx/indy = exponent which determines grid points in x/y direction: */
 /* nx = 2**indx, ny = 2**indy */
    int indx =   9, indy =   9;

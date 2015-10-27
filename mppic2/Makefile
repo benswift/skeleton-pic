@@ -43,10 +43,12 @@
 # Makefile Intel compiler with Linux
 
 # MPI
-MPIFC = mpiifort -openmp
-MPICC = mpiicc -openmp
+MPIFC = mpifort -openmp
+MPICC = clang-omp -openmp
 
-CC = icc
+CC = clang-omp
+
+LOPTS =  -liomp5 -lmpi
 
 OPTS90 = -O3
 #OPTS90 = -O3 -r8
