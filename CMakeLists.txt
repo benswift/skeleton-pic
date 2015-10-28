@@ -69,7 +69,7 @@ install(TARGETS bpic2
 #   mpbpic2/mpbpush2.c
 #   mpbpic2/omplib.c
 #   mpbpic2/mpbpic2.c
-#   ompi_comm_addr.c)
+#   xtm_mpi_addr.c)
 
 # target_compile_options(mbpic2 PRIVATE ${OpenMP_C_FLAGS})  
 # target_include_directories(mpbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
@@ -115,7 +115,7 @@ if(OPENMP)
     mppic2/omplib.c
     # mppic2/ppic2.c
     # mppic2/ppush2.c
-    ompi_comm_addr.c)
+    xtm_mpi_addr.c)
 
   # MPI
   target_include_directories(mppic2 PRIVATE ${MPI_C_INCLUDE_PATH})
@@ -139,7 +139,7 @@ add_library(pbpic2 SHARED
   pbpic2/pbpush2.c
   pbpic2/pbpic2.c
   pbpic2/pplib2.c
-  ompi_comm_addr.c)
+  xtm_mpi_addr.c)
 
 target_include_directories(pbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
 target_link_libraries(pbpic2 PRIVATE ${MPI_C_LIBRARIES})  
@@ -154,7 +154,7 @@ install(TARGETS pbpic2
 #   pic3/dtimer.c
 #   pic3/push3.c
 #   pic3/pic3.c
-#   ompi_comm_addr.c)
+#   xtm_mpi_addr.c)
 
 # target_include_directories(pic3 PRIVATE ${MPI_C_INCLUDE_PATH})  
 # target_link_libraries(pic3 PRIVATE ${MPI_C_LIBRARIES})  
@@ -170,7 +170,7 @@ add_library(ppic2 SHARED
   ppic2/ppush2.c
   ppic2/ppic2.c
   ppic2/pplib2.c
-  ompi_comm_addr.c)
+  xtm_mpi_addr.c)
 
 target_include_directories(ppic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
 target_link_libraries(ppic2 PRIVATE ${MPI_C_LIBRARIES})  
