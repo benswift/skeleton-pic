@@ -141,12 +141,25 @@ add_library(pbpic2 SHARED
   pbpic2/pplib2.c
   xtm_mpi_addr.c)
 
-target_include_directories(pbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})  
-target_link_libraries(pbpic2 PRIVATE ${MPI_C_LIBRARIES})  
+target_include_directories(pbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})
+target_link_libraries(pbpic2 PRIVATE ${MPI_C_LIBRARIES})
 
 install(TARGETS pbpic2
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib)
+
+add_executable(cpbpic2
+  pbpic2/dtimer.c
+  pbpic2/pbpush2.c
+  pbpic2/pbpic2.c
+  pbpic2/pplib2.c
+  xtm_mpi_addr.c)
+
+target_include_directories(cpbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})
+target_link_libraries(cpbpic2 PRIVATE ${MPI_C_LIBRARIES})
+
+install(TARGETS cpbpic2
+  RUNTIME DESTINATION bin)
 
 # pic3
 
