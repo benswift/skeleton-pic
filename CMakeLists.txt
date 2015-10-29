@@ -158,6 +158,10 @@ add_executable(cpbpic2
 target_include_directories(cpbpic2 PRIVATE ${MPI_C_INCLUDE_PATH})
 target_link_libraries(cpbpic2 PRIVATE ${MPI_C_LIBRARIES})
 
+if(UNIX AND NOT APPLE)
+  target_link_libraries(cpbpic2 PRIVATE -lm)
+endif()
+
 install(TARGETS cpbpic2
   RUNTIME DESTINATION bin)
 
