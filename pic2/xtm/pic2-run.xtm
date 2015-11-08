@@ -1,0 +1,16 @@
+;;; pic.xtm:examples -- example of the pic code in use
+
+;; Author: Ben Swift
+;; Keywords: extempore
+;; Required dylibs: libcpic2.dylib
+
+;;; Commentary:
+
+;; example file for running the PIC particle simulation
+
+;;; Code:
+
+(define *skeleton-pic-path* "/Users/ben/Code/src/skeleton-pic/")
+
+(sys:load (string-append *skeleton-pic-path* "pic2/xtm/pic2.xtm"))
+(pic2_loop)
