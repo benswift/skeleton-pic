@@ -219,6 +219,23 @@ install(TARGETS ppic2
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib)
 
+add_executable(cppic2
+  ppic2/dtimer.c
+  ppic2/ppush2.c
+  ppic2/ppic2.c
+  ppic2/pplib2.c
+  xtm_mpi_addr.c)
+
+target_include_directories(cppic2 PRIVATE ${MPI_C_INCLUDE_PATH})
+target_link_libraries(cppic2 PRIVATE ${MPI_C_LIBRARIES})
+
+if(UNIX AND NOT APPLE)
+  target_link_libraries(cppic2 PRIVATE -lm)
+endif()
+
+install(TARGETS cppic2
+  RUNTIME DESTINATION bin)
+
 # vbpic2
 
 add_library(vbpic2 SHARED
