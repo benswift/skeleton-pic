@@ -125,10 +125,33 @@ if(OPENMP)
   target_compile_options(mppic2 PRIVATE ${OpenMP_C_FLAGS})
   target_link_libraries(mppic2 PRIVATE iomp5) # if using clang/libiomp
   # target_link_libraries(mppic2 PRIVATE gomp) # if using clang/libiomp
-
   install(TARGETS mppic2
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib)
+
+  add_executable(cmppic2
+    mppic2/dtimer.c
+    mppic2/mppic2.c
+    mppic2/mpplib2.c
+    mppic2/mppush2.c
+    mppic2/omplib.c
+    xtm_mpi_addr.c)
+
+  # MPI
+  target_include_directories(cmppic2 PRIVATE ${MPI_C_INCLUDE_PATH})
+  target_link_libraries(cmppic2 PRIVATE ${MPI_C_LIBRARIES})
+
+  # OpenMP
+  target_compile_options(cmppic2 PRIVATE ${OpenMP_C_FLAGS})
+  target_link_libraries(cmppic2 PRIVATE iomp5) # if using clang/libiomp
+  # target_link_libraries(cmppic2 PRIVATE gomp) # if using clang/libiomp
+
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(cmppic2 PRIVATE -lm)
+  endif()
+
+  install(TARGETS cmppic2
+    RUNTIME DESTINATION bin)
 
 endif()
 
