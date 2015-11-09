@@ -122,7 +122,7 @@
         (set! nn (convert (pref part (* idimp j))))
         (set! mm (convert (pref part (+ 1 (* idimp j)))))
         (set! dxp (- (pref part (* idimp j)) (convert nn)))
-        (set! dyp (- (pref part (* idimp j)) (convert mm)))
+        (set! dyp (- (pref part (+ 1 (* idimp j))) (convert mm)))
         (set! nn (* nn 2))
         (set! mm (* (- mm mnoff) nxv2))
         (set! amx (- 1.0 dxp))
