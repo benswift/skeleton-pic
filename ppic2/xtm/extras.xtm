@@ -188,3 +188,55 @@
       ;; /* normalize kinetic energy */
       (pset! ek 0 (+ (pref ek 0) (convert (* 0.125 sum1))))
       void)))
+
+(bind-func cppgpost2l:[void,float*,float*,i32,i32,float,i32,i32,i32,i32]*
+  (lambda (part q npp noff qm idimp npmax nxv nypmx)
+    ;; /* for 2d code, this subroutine calculates particle charge density
+    ;;    using first-order linear interpolation, periodic boundaries
+    ;;    scalar version using guard cells, for distributed data
+    ;;    17 flops/particle, 6 loads, 4 stores
+    ;;    input: all, output: q
+    ;;    charge density is approximated by values at the nearest grid points
+    ;;    q(n,m)=qm*(1.-dx)*(1.-dy)
+    ;;    q(n+1,m)=qm*dx*(1.-dy)
+    ;;    q(n,m+1)=qm*(1.-dx)*dy
+    ;;    q(n+1,m+1)=qm*dx*dy
+    ;;    where n,m = leftmost grid points and dx = x-n, dy = y-m
+    ;;    part[n][0] = position x of particle n in partition
+    ;;    part[n][1] = position y of particle n in partition
+    ;;    q[k][j] = charge density at grid point (j,kk),
+    ;;    where kk = k + noff
+    ;;    npp = number of particles in partition
+    ;;    noff = lowermost global gridpoint in particle partition.
+    ;;    qm = charge on particle, in units of e
+    ;;    idimp = size of phase space = 4
+    ;;    npmax = maximum number of particles in each partition
+    ;;    nxv = first dimension of charge array, must be >= nx+1
+    ;;    nypmx = maximum size of particle partition, including guard cells.
+    ;; local data                                                            */
+    (let ((mnoff:i32 noff) 
+          (j:i32 0) 
+          (nn:i32 0) 
+          (np:i32 0) 
+          (mm:i32 0) 
+          (mp:i32 0)
+          (dxp:float 0.) 
+          (dyp:float 0.) 
+          (amx:float 0.) 
+          (amy:float 0.))
+      (dotimes (j npp)
+        ;; /* find interpolation weights */
+        (set! nn (convert (pref part (* idimp j))))
+        (set! mm (convert (pref part (+ 1 (* idimp j)))))
+        (set! dxp (* qm (- (pref part (* idimp j)) (convert nn))))
+        (set! dyp (- (pref part (+ 1 (* idimp j))) (convert mm)))
+        (set! mm (* nxv (- mm mnoff)))
+        (set! amx (- qm dxp))
+        (set! mp (+ mm nxv))
+        (set! amy (- 1. dyp))
+        (set! np (+ nn 1))
+        ;; /* deposit charge */
+        (pset! q (+ np mp) (+ (pref q (+ np mp)) (* dxp dyp))) 
+        (pset! q (+ nn mp) (+ (pref q (+ nn mp)) (* amx dyp))) 
+        (pset! q (+ np mm) (+ (pref q (+ np mm)) (* dxp amy))) 
+        (pset! q (+ nn mm) (+ (pref q (+ nn mm)) (* amx amy)))))))
