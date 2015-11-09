@@ -266,6 +266,50 @@
 (bind-val npp_ptr i32*)
 (bind-val ierr_ptr i32*)
 
+
+(bind-func cpdicomp2l:[void,float*,i32*,i32*,i32*,i32*,i32,i32,i32,i32]*
+  (lambda (edges nyp noff nypmx nypmn ny kstrt nvp idps)
+    ;; /* this subroutine determines spatial boundaries for uniform particle
+    ;;    decomposition, calculates number of grid points in each spatial
+    ;;    region, and the offset of these grid points from the global address
+    ;;    nvp must be < ny.  some combinations of ny and nvp result in a zero
+    ;;    value of nyp.  this is not supported.
+    ;;    integer boundaries are set.
+    ;;    input: ny, kstrt, nvp, idps, output: edges, nyp, noff, nypmx, nypmn
+    ;;    edges[0] = lower boundary of particle partition
+    ;;    edges[1] = upper boundary of particle partition
+    ;;    nyp = number of primary (complete) gridpoints in particle partition
+    ;;    noff = lowermost global gridpoint in particle partition
+    ;;    nypmx = maximum size of particle partition, including guard cells
+    ;;    nypmn = minimum value of nyp
+    ;;    ny = system length in y direction
+    ;;    kstrt = starting data block number (processor id + 1)
+    ;;    nvp = number of real or virtual processors
+    ;;    idps = number of partition boundaries
+    ;; local data                                                            */
+    (let ((kb (- kstrt 1))
+          (kyp (+ (/ (- ny 1) nvp) 1))
+          (at1 (convert kyp float))
+          (any (convert ny float))
+          (mypm:|2,i32|* (salloc))
+          (iwork2:|2,i32|* (salloc)))
+      ;; /* determine decomposition */
+      (pset! edges 0 (* at1 (convert kb)))
+      (if (> (pref edges 0) any)
+          (pset! edges 0 any))
+      (pset! noff 0 (convert (pref edges 0)))
+      (pset! edges 1 (* at1 (convert (+ kb 1))))
+      (if (> (pref edges 1) any)
+          (pset! edges 1 any))
+      (set! kb (convert (pref edges 1) i32))
+      (pset! nyp 0 (- kb (pref noff 0)))
+      ;; /* find maximum/minimum partition size */
+      (afill! mypm (pref nyp 0) (* -1 (pref nyp 0)))
+      (cppimax (aref-ptr mypm 0) (aref-ptr iwork2 0) 2)
+      (pset! nypmx 0 (+ (aref mypm 0) 1))
+      (pset! nypmn 0 (* -1 (aref mypm 1)))
+      void)))
+
 (impc:aot:do-or-emit
  (call-as-xtlang
   ;; init MPI partition variables: edges, nyp, noff, nypmx
