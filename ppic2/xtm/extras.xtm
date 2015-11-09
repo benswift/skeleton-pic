@@ -1,0 +1,147 @@
+(bind-func cppgpush2l:[void,float*,float*,float*,i32,i32,i32*,float,float,float*,i32,i32,i32,i32,i32,i32,i32,i32,i32]*
+  (lambda (part fxy edges npp noff ihole qbm dt ek nx ny idimp npmax nxv nypmx idps ntmax ipbc)
+    ;; /* for 2d code, this subroutine updates particle co-ordinates and
+    ;;    velocities using leap-frog scheme in time and first-order linear
+    ;;    interpolation in space, with various boundary conditions
+    ;;    also determines list of particles which are leaving this processor
+    ;;    scalar version using guard cells, for distributed data
+    ;;    42 flops/particle, 12 loads, 4 stores
+    ;;    input: all except ihole, output: part, ihole, ek
+    ;;    equations used are:
+    ;;    vx(t+dt/2) = vx(t-dt/2) + (q/m)*fx(x(t),y(t))*dt,
+    ;;    vy(t+dt/2) = vy(t-dt/2) + (q/m)*fy(x(t),y(t))*dt,
+    ;;    where q/m is charge/mass, and
+    ;;    x(t+dt) = x(t) + vx(t+dt/2)*dt, y(t+dt) = y(t) + vy(t+dt/2)*dt
+    ;;    fx(x(t),y(t)) and fy(x(t),y(t)) are approximated by interpolation from
+    ;;    the nearest grid points:
+    ;;    fx(x,y) = (1-dy)*((1-dx)*fx(n,m)+dx*fx(n+1,m)) + dy*((1-dx)*fx(n,m+1)
+    ;;       + dx*fx(n+1,m+1))
+    ;;    fy(x,y) = (1-dy)*((1-dx)*fy(n,m)+dx*fy(n+1,m)) + dy*((1-dx)*fy(n,m+1)
+    ;;       + dx*fy(n+1,m+1))
+    ;;    where n,m = leftmost grid points and dx = x-n, dy = y-m
+    ;;    part[n][0] = position x of particle n in partition
+    ;;    part[n][1] = position y of particle n in partition
+    ;;    part[n][2] = velocity vx of particle n in partition
+    ;;    part[n][3] = velocity vy of particle n in partition
+    ;;    fxy[k][j][0] = x component of force/charge at grid (j,kk)
+    ;;    fxy[k][j][1] = y component of force/charge at grid (j,kk)
+    ;;    in other words, fxy are the convolutions of the electric field
+    ;;    over the particle shape, where kk = k + noff
+    ;;    edges[0:1] = lower:upper boundary of particle partition
+    ;;    npp = number of particles in partition
+    ;;    noff = lowermost global gridpoint in particle partition.
+    ;;    ihole = location of hole left in particle arrays
+    ;;    ihole[0] = ih, number of holes left (error, if negative)
+    ;;    qbm = particle charge/mass
+    ;;    dt = time interval between successive calculations
+    ;;    kinetic energy/mass at time t is also calculated, using
+    ;;    ek = .125*sum((vx(t+dt/2)+vx(t-dt/2))**2+(vy(t+dt/2)+vy(t-dt/2))**2)
+    ;;    nx/ny = system length in x/y direction
+    ;;    idimp = size of phase space = 4
+    ;;    npmax = maximum number of particles in each partition
+    ;;    nxv = first dimension of field array, must be >= nx+1
+    ;;    nypmx = maximum size of particle partition, including guard cells.
+    ;;    idps = number of partition boundaries
+    ;;    ntmax = size of hole array for particles leaving processors
+    ;;    ipbc = particle boundary condition = (0,1,2,3) =
+    ;;    (none,2d periodic,2d reflecting,mixed reflecting/periodic)
+    ;; local data
+    (let ((mnoff:i32 noff) 
+          (j:i32 0) 
+          (nn:i32 0) 
+          (mm:i32 0) 
+          (np:i32 0) 
+          (mp:i32 0) 
+          (ih:i32 0) 
+          (nh:i32 0) 
+          (nxv2:i32 (* 2 nxv))
+          (qtm:float (* qbm dt))
+          ;; /* set boundary values */
+          (edgelx:float 0.)
+          (edgely:float 1.)
+          (edgerx:float (convert nx))
+          (edgery:float (convert (- ny 1)))
+          (dxp:float 0.)
+          (dyp:float 0.)
+          (amx:float 0.)
+          (amy:float 0.)
+          (dx:float 0.)
+          (dy:float 0.)
+          (vx:float 0.)
+          (vy:float 0.)
+          (sum1:double 0.))
+      (if (or (= ipbc 2)
+              (= ipbc 3))
+          (set! edgelx 1.0)
+          (set! edgerx (convert (- nx 1))))
+      (doloop (j npp)
+        ;; /* find interpolation weights */
+        (set! nn (convert (pref part (* idimp j))))
+        (set! mm (convert (pref part (+ 1 (* idimp j)))))
+        (set! dxp (- (pref part (* idimp j)) (convert nn)))
+        (set! dyp (- (pref part (* idimp j)) (convert mm)))
+        (set! nn (* nn 2))
+        (set! mm (* (- mm mnoff) nxv2))
+        (set! amx (- 1.0 dxp))
+        (set! mp (+ mm nxv2))
+        (set! amy (- 1.0 dyp))
+        (set! np (+ nn 2))
+        ;; /* find acceleration */
+        (set! dx
+              (+ (* dyp (+ (* dxp (pref fxy (+ np mp))) (* amx (pref fxy (+ nn mp)))))
+                 (* amy (+ (* dxp (pref fxy (+ np mm))) (* amx (pref fxy (+ nn mm)))))))
+        (set! dy
+              (+ (* dyp (+ (* dxp (pref fxy (+ 1 np mp))) (* amx (pref fxy (+ 1 nn mp)))))
+                 (* amy (+ (* dxp (pref fxy (+ 1 np mm))) (* amx (pref fxy (+ 1 nn mm)))))))
+        ;; /* new velocity */
+        (set! vx (pref part (+ 2 (* idimp j))))
+        (set! vy (pref part (+ 3 (* idimp j))))
+        (set! dx (+ vx (* qtm dx)))
+        (set! dy (+ vy (* qtm dy)))
+        ;; /* average kinetic energy */
+        (set! vx (+ vx dx))
+        (set! vy (+ vy dy))
+        (set! sum1 (+ sum1 (convert (* vx vx)) (convert (* vy vy))))
+        (pset! part (+ 2 (* idimp j)) dx)
+        (pset! part (+ 3 (* idimp j)) dy)
+        ;; /* new position */
+        (set! dx (+ (pref part (* idimp j)) (* dx dt)))
+        (set! dy (+ (pref part (+ 1 (* idimp j))) (* dy dt)))
+        ;; /* periodic boundary conditions in x */
+        (cond ((= ipbc 1)
+               (if (< dx edgelx) (set! dx (+ dx edgerx)))
+               (if (>= dx edgerx) (set! dx (- dx edgerx))))
+              ;; /* reflecting boundary conditions */
+              ((= ipbc 2)
+               (if (or (< dx edgelx) (>= dx edgerx))
+                   (begin
+                     (set! dx (pref part (* idimp j)))
+                     (pset! part (+ 2 (* idimp j)) (* -1. (pref part (+ 2 (* idimp j)))))))
+               (if (or (< dy edgely) (>= dy edgery))
+                   (begin
+                     (set! dy (pref part (+ 1 (* idimp j))))
+                     (pset! part (+ 3 (* idimp j)) (* -1. (pref part (+ 3 (* idimp j))))))))
+              ;; /* mixed reflecting/periodic boundary conditions */
+              ((= ipbc 3)
+               (if (or (< dx edgelx) (>= dx edgerx))
+                   (begin
+                     (set! dx (pref part (* idimp j)))
+                     (pset! part (+ 2 (* idimp j)) (* -1. (pref part (+ 2 (* idimp j)))))))))
+        ;; /* find particles out of bounds */
+        (if (or (< dy (pref edges 0))
+                (>= dy (pref edges 1)))
+            (begin
+              (if (< ih ntmax)
+                  (pset! ihole (+ ih 1) (+ 1 j))
+                  (set! nh 1))
+              (set! ih (+ ih 1))))
+        ;; /* set new position */
+        (pset! part (* idimp j) dx)
+        (pset! part (+ 1 (* idimp j)) dy))
+      ;; /* set end of file flag */
+      (if (> nh 0)
+          (set! ih (* ih -1)))
+      (pset! ihole 0 ih)
+      ;; /* normalize kinetic energy */
+      (pset! ek 0 (+ (pref ek 0) (convert (* 0.125 sum1))))
+      void)))
