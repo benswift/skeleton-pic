@@ -24,37 +24,10 @@
 
 ;; OpenGL setup
 
-(bind-func ppic2_visuals_set_gl_capabilities
-  (lambda ()
-    (glDepthMask GL_FALSE)
-    (glEnable GL_BLEND)
-    (glBlendFunc GL_SRC_ALPHA GL_ONE)
-    (glEnable GL_PROGRAM_POINT_SIZE)
-    (glDisable GL_LINE_SMOOTH)
-    void))
-
-(ppic2_visuals_set_gl_capabilities)
-
-(bind-func ppic2_visuals_unset_gl_capabilities
-  (lambda ()
-    (glDepthMask GL_TRUE)
-    (glDisable GL_BLEND)
-    (glDisable GL_PROGRAM_POINT_SIZE)
-    ;; (glEnable GL_LINE_SMOOTH)
-    void))
-
-;; not sure if we need to call this - depends on whether the above
-;; stuff messes with nanovg
-
-;; (ppic2_visuals_unset_gl_capabilities)
-
 ;;;;;;;;;;;;
 ;; fields ;;
 ;;;;;;;;;;;;
 
-(bind-val field_vbo VBO*)
-(bind-val field_vao VAO*)
-(bind-val field_sp ShaderProgram)
 
 ;; this data should have interleaved the `bases' of the field arrows
 ;; (i.e. the grid) in 2D with the ndim (i.e. 3D) field components
@@ -62,7 +35,7 @@
 (bind-val field_arrows float*)
 
 (bind-func ppic2_visuals_field_init
-  (lambda (vsource fsource)
+  (lambda ()
     (let ((field_arrows_:float* (halloc (* 4 nx ny)))
           (idx 0))
       (set! field_arrows field_arrows_)
@@ -72,20 +45,13 @@
           (set! idx (* (+ (* i nx) j) 4))
           (pset! field_arrows
                  idx
-                 (- (* (/ (convert i float) (convert nx float)) 2.0) 1.0))
+                 (/ (convert i float) (convert nx float)))
           (pset! field_arrows
                  (+ idx 1)
-                 (- (* (/ (convert j float) (convert ny float)) 2.0) 1.0))))
-      ;; fields
-      (set! field_vbo (VBO_create field_arrows (convert (* 4 nx ny))))
-      (set! field_vao (VAO_create))
-      (VAO_bind_attribute field_vao field_vbo 0 2)
-      (set! field_sp (ShaderProgram_create vsource fsource))
+                 (/ (convert j float) (convert ny float)))))
       void)))
 
-(ppic2_visuals_field_init
- (sys:slurp-file (string-append *skeleton-pic-path* "ppic2/xtm/ppic2-field.vert"))
- (sys:slurp-file (string-append *skeleton-pic-path* "ppic2/xtm/ppic2-field.frag")))
+(ppic2_visuals_field_init)
 
 (bind-func ppic2_visuals_copy_field_data
   (lambda (field:float* scale_factor:float)
@@ -115,7 +81,7 @@
                  (+ (pref field_arrows (+ field_arrows_idx 1))
                     (* scale_factor (pref field (+ field_idx 1))))))))))
 
-;; not sure why fxye tends to get massive (junk) numbers in it, but
+;; not sure why fxyze tends to get massive (junk) numbers in it, but
 ;; this hack cleans them out.
 (bind-func ppic2_visuals_reset_arrows_buffer
   (lambda ()
@@ -134,43 +100,79 @@
                      (pref field_arrows (+ 1 idx)))))))))
 
 (bind-func ppic2_visuals_field_draw
-  (lambda ()
-    (ppic2_visuals_copy_field_data fxye .1)
-    ;; (ppic2_visuals_reset_arrows_buffer)
-    (VBO_update_data field_vbo)
-    (glUseProgram field_sp)
-    (VAO_bind_and_draw_arrays field_vao GL_LINES 0 (convert (* 4 nxe ny)))
-    void))
+  (let ((bounds (Rect 0. 0. (convert width) (convert height))))
+    (lambda ()
+      (ppic2_visuals_copy_field_data fxye .1)
+      (dv_draw_line_segments vg bounds field_arrows 1000)
+      void)))
 
-;; particles
+;;;;;;;;;;;;;;;
+;; particles ;;
+;;;;;;;;;;;;;;;
 
-(bind-val particle_vbo VBO*)
-(bind-val particle_vao VAO*)
+(bind-func dv_draw_scatter_points_fixed_size
+  "draw 2D points for a scatterplot
 
-(bind-val particle_sp ShaderProgram)
-
-(bind-func ppic2_visuals_particles_init
-  (lambda (vsource fsource)
-    (set! particle_vbo (VBO_create part (convert (* nvp idimp npmax))))
-    (set! particle_vao (VAO_create))
-    (VAO_bind_attribute particle_vao particle_vbo 0 2 4 0)
-    (VAO_bind_attribute particle_vao particle_vbo 1 2 4 2)
-    (set! particle_sp (ShaderProgram_create vsource fsource))
-    void))
-
-(ppic2_visuals_particles_init
- (sys:slurp-file (string-append *skeleton-pic-path* "ppic2/xtm/ppic2-particle.vert"))
- (sys:slurp-file (string-append *skeleton-pic-path* "ppic2/xtm/ppic2-particle.frag")))
+@param vg - nanovg context pointer
+@param bounds - bounding rect in which to draw the points
+@param points - pointer to point data (packed) e.g. x1,y1,x2,y2,...
+@param npoints - number of points
+@param size - point size"
+  (lambda (vg bounds:Rect* points:float* npoints:i64 size:float)
+    (if (< npoints 1)
+        (begin (println "npoints must be at least 1 for scatter_points") -1)
+        (letz ((padding 0.1)
+               (x (+ (tref bounds 0) (* (tref bounds 2) padding)))
+               (y (+ (tref bounds 1) (* (tref bounds 3) padding)))
+               (w (* (tref bounds 2) (- 1. (* 2. padding))))
+               (h (* (tref bounds 3) (- 1. (* 2. padding))))
+               (i 0))
+          (_nvgStrokeColor vg (NVGcolor 1. 1. 1. .1))
+          (nvgStrokeWidth vg 2.)
+          (nvgBeginPath vg)
+          ;; add circles to path
+          (dotimes (i npoints)
+            (nvgCircle vg
+                       (+ x (* w (/ (pref points (* 4 i)) (convert nx))))
+                       (+ y (* h (- 1. (/ (pref points (+ (* i 4) 1)) (convert ny)))))
+                       size))
+          (nvgStroke vg)
+          0))))
 
 (bind-func ppic2_visuals_particles_draw
-  (lambda ()
-    ;; move particles, update VBO
-    (VBO_update_data particle_vbo)
-    ;; draw the world
-    (glUseProgram particle_sp)
-    (glUniform2f (glGetUniformLocation particle_sp "nxny") (convert nxe) (convert ny))
-    (VAO_bind_and_draw_arrays particle_vao GL_POINTS 0 (* nvp npmax))
-    void))
+  (let ((bounds (Rect 0. 0. (convert width) (convert height))))
+    (lambda ()
+      (dv_draw_scatter_points vg bounds part (convert np) 3.)
+      void)))
+
+;;;;;;;;;;;;;;;;;;;;
+;; charge density ;;
+;;;;;;;;;;;;;;;;;;;;
+
+(bind-func ppic2_visuals_charge_density_draw
+  (let ((bounds (Rect 0. 0. (convert width) (convert height)))
+        (tile_fill (NVGcolor 1. 1. 1. 1.)))
+    (lambda ()
+      (let ((padding 0.1)
+            (x (+ (tref bounds 0) (* (tref bounds 2) padding)))
+            (y (+ (tref bounds 1) (* (tref bounds 3) padding)))
+            (w (* (tref bounds 2) (- 1. (* 2. padding))))
+            (h (* (tref bounds 3) (- 1. (* 2. padding)))))
+        ;; add circles to path
+        (doloop (col nx)
+          (doloop (row ny)
+            (tset! tile_fill 3 (* 2000. (pref qe (+ (* col nxe) row))))
+            (_nvgFillColor vg tile_fill)
+            (nvgBeginPath vg)
+            (nvgRect vg
+                     (+ x (* w (/ (convert col float) (convert nx float))))
+                     (+ y (* h (- 1. (/ (convert row float) (convert ny float)))))
+                     (/ (convert width float) (convert nx float))
+                     (/ (convert height float) (convert ny float)))
+            (nvgFill vg)))
+        void))))
+
+;; TODO start from fixed (and known) part buffer, work from there
 
 ;; histograms (currently taken from math.xtm, but with some modifications)
 
@@ -266,12 +268,12 @@
                       (* (convert width) .5) (* (convert height) .5)))
         (xcolor (NVGcolor 1. 0. 0. 1.))
         (xrect (Rect (tref bounds 0) (tref bounds 1)
-                     (/ (tref bounds 2) 3.) (tref bounds 3)))
+                     (/ (tref bounds 2) 2.) (tref bounds 3)))
         (ycolor (NVGcolor 0. 1. 0. 1.))
-        (yrect (Rect (+ (tref bounds 0) (/ (tref bounds 2) 3.)) (tref bounds 1)
-                     (/ (tref bounds 2) 3.) (tref bounds 3)))
-        (histrange 10.)
-        (histscale .002)
+        (yrect (Rect (+ (tref bounds 0) (/ (tref bounds 2) 2.)) (tref bounds 1)
+                     (/ (tref bounds 2) 2.) (tref bounds 3)))
+        (histrange 5.)
+        (histscale .0002)
         (font_size 30.))
     (lambda ()
       ;; x histogram
@@ -309,11 +311,11 @@
 
 (bind-lib libc getloadavg [i32,double*,i32]*)
 
-;; (call-as-xtlang
-;;  (let ((load:double* (salloc 3)))
-;;    (if (<> (getloadavg load 3) -1)
-;;        (doloop (i 3)
-;;          (println (pref load i))))))
+(call-as-xtlang
+ (let ((load:double* (salloc 3)))
+   (if (<> (getloadavg load 3) -1)
+       (doloop (i 3)
+         (println (pref load i))))))
 
 ;; framebuffer & backing textures
 
@@ -353,18 +355,6 @@
 
 ;; draw all the things
 
-(bind-func nvg_draw_frame
-  (lambda ()
-    (nvgBeginPath vg)
-    (_nvgFillColor vg (NVGcolor 0. 0. 1. 1.))
-    (nvgRect vg (random 100. 200.) 100. 100. 100.)
-    (nvgFill vg)
-    ;; (_nvgFillColor vg (NVGcolor 0. 1. 0. 1.))
-    ;; (nvgBeginPath vg)
-    ;; (nvgText vg (random 100. 200.) 100. "benlabel" null) 
-    ;; (nvgFill vg)
-    void))
-
 (bind-func ppic2_visuals_loop
   (let ((drawbufs_ptr:GLenum* (zalloc)))
     (pset! drawbufs_ptr 0 GL_COLOR_ATTACHMENT0)
@@ -373,15 +363,12 @@
       (glBindFramebuffer GL_FRAMEBUFFER (FBO_id fbo))
       (glDrawBuffers 1 drawbufs_ptr)
       (glClear (bor GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
-      ;; (raw) OpenGL draw routines
-      (ppic2_visuals_particles_draw)
-      (ppic2_visuals_field_draw)
-      ;; setup nanovg
+      ;; nanovg
       (nvgBeginFrame vg width height pixel_ratio)
       (nvgResetTransform vg)
-      ;; (ppic2_visuals_vhist_draw)
-      (nvg_draw_frame)
-      ;; draw any nanovg things
+      (ppic2_visuals_particles_draw)
+      ;; (ppic2_visuals_field_draw)
+      (ppic2_visuals_vhist_draw)
       (nvgEndFrame vg)
       ;; render FBO to screen
       (ppic2_visuals_draw_framebuffer)
