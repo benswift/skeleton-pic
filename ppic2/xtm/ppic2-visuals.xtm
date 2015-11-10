@@ -273,15 +273,13 @@
         (yrect (Rect (+ (tref bounds 0) (/ (tref bounds 2) 2.)) (tref bounds 1)
                      (/ (tref bounds 2) 2.) (tref bounds 3)))
         (histrange 5.)
-        (histscale .0002)
+        (histscale .001)
         (font_size 30.))
     (lambda ()
       ;; x histogram
       (histogram vhist_data part (convert np) (* -1. histrange) histrange vhist_nbins 4 2)
       ;; y histogram
-      (histogram (pref-ptr vhist_data vhist_nbins) part (convert np) (* -1. histrange) histrange vhist_nbins 5 3)
-      ;; z histogram
-      (histogram (pref-ptr vhist_data (* 2 vhist_nbins)) part (convert np) (* -1. histrange) histrange vhist_nbins 5 4)
+      (histogram (pref-ptr vhist_data vhist_nbins) part (convert np) (* -1. histrange) histrange vhist_nbins 4 3)
       ;; apply some scaling
       (doloop (i (* 3 vhist_nbins))
         (tset! (pref-ptr vhist_data i) 0 (+ .5 (/ (tref (pref-ptr vhist_data i) 0) (* 2. histrange))))
@@ -328,9 +326,13 @@
     (let ((fbw_ptr:i32* (salloc))
           (fbh_ptr:i32* (salloc)))
       (glfwGetFramebufferSize window fbw_ptr fbh_ptr)
+      ;; fbo texture should be in texture slot 1
+      (glActiveTexture GL_TEXTURE1)
       (println (set! fbo (FBO_create_with_textures (pref fbw_ptr 0) (pref fbh_ptr 0) #t)))
       (set! ss_quad_vao (VAO_create_ss_quad))
       (set! post_process_sp (ShaderProgram_create vsource fsource))
+      ;; (glUniform1i (glGetUniformLocation post_process_sp "fb_tex") 1)
+      ;; (gl_print_error "ppic2_visuals_framebuffer_init")
       void)))
 
 (ppic2_visuals_framebuffer_init
@@ -366,7 +368,7 @@
       ;; nanovg
       (nvgBeginFrame vg width height pixel_ratio)
       (nvgResetTransform vg)
-      (ppic2_visuals_particles_draw)
+      ;; (ppic2_visuals_particles_draw)
       ;; (ppic2_visuals_field_draw)
       (ppic2_visuals_vhist_draw)
       (nvgEndFrame vg)
