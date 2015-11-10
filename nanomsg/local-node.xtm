@@ -38,6 +38,11 @@
             (println "stopping nonblocking_read loop")
             0)))))
 
+
+;; start the read loop running
+(nonblocking_read)
+
+
 (bind-func send_msg
   (lambda (msg)
     (doloop (i NUMBER_OF_PROCS)
@@ -48,9 +53,6 @@
               (nn_println_strerror)
               void))))))
 
-;; start the read loop running
-(nonblocking_read)
-
 ;; try it out
 (send_msg (string-append "test message" (number->string (random 100))))
 
@@ -59,23 +61,3 @@
 ;;  (nonblocking_read.continue #f)
 ;;  (nn_shutdown SURVEYOR_SOCKET 0))
 
-
-(bind-func multi_connect_socket
-  (lambda ()
-    (let ((port_forward_address:i8* (zalloc 256))
-          (sock (nnsock_create NN_REQ)))
-      (doloop (i NUMBER_OF_PROCS)
-        (sprintf port_forward_address "tcp://127.0.0.1:%d" (+ i 13000))
-        (nnsock_connect sock port_forward_address))
-      sock)))
-
-(bind-func read_socket
-  (let ((buflen:i64 1024)
-        (buf:i8* (zalloc buflen))))
-  (lambda (sock:i32)
-    (let ((nbytes (nn_recv sock buf buflen NN_DONTWAIT)))
-      (read-bytes buf buflen))))
-
-(bind-func send-msg
-  (lambda ()
-    ))
