@@ -477,11 +477,17 @@
 ;;       1)
 ;;     (ppic2_print_energies)))
 
+(bind-func ppic2_visuals
+  (lambda ()
+    void))
+
 (bind-func ppic2_loop
   (lambda ()
     (let ((ntime (ppic2_step)))
       (if (= (% ntime 1000) 0)
           (println "ntime:" ntime))
+      (ppic2_visuals)
+      ;; (callback (+ (now) (/ 44100 5)) ppic2_loop)
       (callback (now) ppic2_loop))))
 
 (impc:aot:insert-footer "xtmppic2")
