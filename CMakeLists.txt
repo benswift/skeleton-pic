@@ -219,6 +219,11 @@ install(TARGETS ppic2
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib)
 
+# install xtm files as well
+
+install(DIRECTORY ppic2/xtm/
+  DESTINATION share/extempore/libs/contrib/pic)
+
 add_executable(cppic2
   ppic2/dtimer.c
   ppic2/ppush2.c
