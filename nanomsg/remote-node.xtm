@@ -1,0 +1,78 @@
+(sys:load "libs/external/nanomsg.xtm")
+
+;; (bind-val LISTENER_ADDRESS i8* "tcp://0.0.0.0:9000")
+;; (bind-val LISTENER_SOCKET i32
+;;   (begin (nnsock_create NN_REP)
+;;          (nnsock_bind LISTENER_SOCKET LISTENER_ADDRESS)))
+
+(bind-val my_sock i32 -1)
+
+(bind-func test-socket-bind
+  (lambda ()
+    (let ((address_start "tcp://*:")
+          (address:i8* (zalloc 100)))
+      (if (< my_sock 0)
+          (set! my_sock (nnsock_create NN_REP)))
+      (sprintf address address_start)
+      (sprintf (pref-ptr address (strlen address)) "%d" nanomsg-port)
+      (nn_bind my_sock address))))
+
+(test-socket-bind)
+
+(bind-func get_nth_particles_all:[void,i32]*
+  (lambda (nth:i32)
+    (let ((number_of_return_particles (/ npmax nth))
+          (number_of_floats (* idimp number_of_return_particles))
+          (return_buf:float* (zalloc number_of_floats)))
+      (doloop (i number_of_return_particles)
+        (doloop (j idimp)
+          (pset! return_buf i (pref part (+ (* i nth) j)))))
+      (nn_send LISTENER_SOCKET return_buf number_of_floats)
+      return_buf)))
+
+(bind-func get_nth_particles_single:[void,i32,i32]*
+  (lambda (nth j)
+    (let ((number_of_return_particles (/ npmax nth))
+          (number_of_floats number_of_return_particles)
+          (return_buf:float* (zalloc number_of_floats)
+           ))
+      (doloop (i number_of_return_particles)
+        (pset! return_buf i (pref part (+ (* i nth) j))))
+      (nn_send LISTENER_SOCKET return_buf number_of_floats))))
+
+(bind-poly get_nth_particles get_nth_particles_all)
+(bind-poly get_nth_particles get_nth_particles_single)
+
+
+(bind-func node_reply
+  (lambda (buf:i8* buflen:i64)
+    (let ((particle_regularity (atoi buf)))
+      (println "something received")
+      ;;(get_nth_particles particle_regularity)
+      (nn_send my_sock buf buflen 0)
+      void)))
+
+
+
+(call-as-xtlang (println kstrt))
+
+(bind-func listener
+  (let ((buflen:i64 1024)
+        (buf:i8* (zalloc buflen))
+        (continue #t))
+    (lambda ()
+      (if (< my_sock 0)
+          (nn_println_strerror)
+          (let ((nbytes (nn_recv my_sock buf buflen NN_DONTWAIT)))
+            ;; if we get some bytes, trigger the callback
+            (if (> nbytes 0)
+                (node_reply buf buflen))))
+      (if continue
+          (callback (+ (now) 500) listener)
+          (begin
+            (println "stopping nonblocking_read loop")
+            0)))))
+
+(listener)
+
+(call-as-xtlang (println nanomsg-port))
