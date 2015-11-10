@@ -5,70 +5,71 @@
 ;;   (begin (nnsock_create NN_REP)
 ;;          (nnsock_bind LISTENER_SOCKET LISTENER_ADDRESS)))
 
-(bind-val SOCK i32 -1)
+(bind-val REMOTE_SOCKET i32 -1)
 
-(bind-func bind-socket
+(bind-val nanomsg-port i32 12000)
+
+(bind-func remote_create_socket
   (lambda ()
     (let ((address_start "tcp://*:")
           (address:i8* (zalloc 100)))
-      (if (< SOCK 0)
-          (set! SOCK (nnsock_create NN_REP)))
+      (if (< REMOTE_SOCKET 0)
+          (set! REMOTE_SOCKET (nnsock_create NN_REP)))
       (sprintf address address_start)
       (sprintf (pref-ptr address (strlen address)) "%d" nanomsg-port)
-      (nn_bind SOCK address))))
+      (nn_bind REMOTE_SOCKET address))))
 
-(bind-socket)
+(remote_create_socket)
 
-(bind-func get_nth_particles_all:[void,i32]*
-  "get 5 (idimp) floats from part, representing particle data"
-  (lambda (nth:i32)
-    (let ((number_of_return_particles (/ npmax nth))
-          (number_of_floats (* idimp number_of_return_particles))
-          (return_buf:float* (zalloc number_of_floats)))
-      (doloop (i number_of_return_particles)
-        (doloop (j idimp)
-          (pset! return_buf i (pref part (+ (* i nth) j)))))
-      (nn_send LISTENER_SOCKET return_buf number_of_floats)
-      return_buf)))
+;; (bind-func get_nth_particles_all:[void,i32]*
+;;   "get 5 (idimp) floats from part, representing particle data"
+;;   (lambda (nth:i32)
+;;     (let ((number_of_return_particles (/ npmax nth))
+;;           (number_of_floats (* idimp number_of_return_particles))
+;;           (return_buf:float* (zalloc number_of_floats)))
+;;       (doloop (i number_of_return_particles)
+;;         (doloop (j idimp)
+;;           (pset! return_buf i (pref part (+ (* i nth) j)))))
+;;       (nn_send LISTENER_SOCKET return_buf number_of_floats)
+;;       return_buf)))
 
-(bind-func get_nth_particles_single:[void,i32,i32]*
-  "get a single float from a particle"
-  (lambda (nth j)
-    (let ((number_of_return_particles (/ npmax nth))
-          (number_of_floats number_of_return_particles)
-          (return_buf:float* (zalloc number_of_floats)))
-      (doloop (i number_of_return_particles)
-        (pset! return_buf i (pref part (+ (* i nth) j))))
-      (nn_send LISTENER_SOCKET return_buf number_of_floats))))
+;; (bind-func get_nth_particles_single:[void,i32,i32]*
+;;   "get a single float from a particle"
+;;   (lambda (nth j)
+;;     (let ((number_of_return_particles (/ npmax nth))
+;;           (number_of_floats number_of_return_particles)
+;;           (return_buf:float* (zalloc number_of_floats)))
+;;       (doloop (i number_of_return_particles)
+;;         (pset! return_buf i (pref part (+ (* i nth) j))))
+;;       (nn_send LISTENER_SOCKET return_buf number_of_floats))))
 
-(bind-poly get_nth_particles get_nth_particles_all)
-(bind-poly get_nth_particles get_nth_particles_single)
+;; (bind-poly get_nth_particles get_nth_particles_all)
+;; (bind-poly get_nth_particles get_nth_particles_single)
 
-(bind-func node_reply
+(bind-func remote_response_handler
   (lambda (buf:i8* buflen:i64)
-    (let ((particle_regularity (atoi buf)))
-      (println "something received")
-      ;;(get_nth_particles particle_regularity)
-      (nn_send SOCK buf buflen 0)
-      void)))
+    (nn_send REMOTE_SOCKET buf buflen 0)
+    void))
 
-(bind-func listener
+(bind-func remote_nonblocking_read
   (let ((buflen:i64 1024)
-        (buf:i8* (zalloc buflen))
-        (continue #t))
+        (buf:i8* (zalloc buflen)))
     (lambda ()
-      (if (< SOCK 0)
+      (if (< REMOTE_SOCKET 0)
           (nn_println_strerror)
-          (let ((nbytes (nn_recv SOCK buf buflen NN_DONTWAIT)))
+          (let ((nbytes (nn_recv REMOTE_SOCKET buf buflen NN_DONTWAIT)))
             ;; if we get some bytes, trigger the callback
             (if (> nbytes 0)
-                (node_reply buf buflen))))
+                (remote_response_handler buf buflen)))))))
+
+(bind-func remote_nonblocking_read_loop
+  (let ((continue #t))
+    (lambda ()
+      (remote_nonblocking_read)
       (if continue
-          (callback (+ (now) 500) listener)
+          (callback (+ (now) 500) remote_nonblocking_read)
           (begin
             (println "stopping nonblocking_read loop")
             0)))))
 
-(listener)
-
-
+(remote_nonblocking_read_loop)
