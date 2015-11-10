@@ -449,14 +449,14 @@
               (set! part2 tpart))))
 
     ;; energy diagnostic
-    (afill! wtot
-            (pref we_ptr 0)
-            (pref wke_ptr 0)
-            0.0
-            (+ (pref we_ptr 0)
-               (pref wke_ptr 0)))
-    (cppsum (aref-ptr wtot 0) (aref-ptr work 0) 4)
-    (pset! wke_ptr 0 (aref wtot 1))
+    ;; (afill! wtot
+    ;;         (pref we_ptr 0)
+    ;;         (pref wke_ptr 0)
+    ;;         0.0
+    ;;         (+ (pref we_ptr 0)
+    ;;            (pref wke_ptr 0)))
+    ;; (cppsum (aref-ptr wtot 0) (aref-ptr work 0) 4)
+    ;; (pset! wke_ptr 0 (aref wtot 1))
     
     (if (= ntime 0)
         (if (= kstrt 1)
