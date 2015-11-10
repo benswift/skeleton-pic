@@ -13,9 +13,9 @@ void dtimer(double *time, struct timeval *itime, int icntrl);
 int main(int argc, char *argv[]) {
 /* indx/indy = exponent which determines grid points in x/y direction: */
 /* nx = 2**indx, ny = 2**indy */
-   int indx =   9, indy =   9;
+   int indx =   12, indy =   12;
 /* npx/npy = number of electrons distributed in x/y direction */
-   int npx =  3072, npy =   3072;
+   int npx =  4000, npy =   4000;
 /* ndim = number of velocity coordinates = 2 */
    int ndim = 2;
 /* tend = time at end of simulation, in units of plasma frequency */
@@ -188,7 +188,10 @@ int main(int argc, char *argv[]) {
 L500: if (nloop <= ntime)
          goto L2000;
 /*    if (kstrt==1) printf("ntime = %i\n",ntime); */
-
+   if (kstrt == 1){
+     printf("loop complete\n");
+   }
+   
 /* deposit charge with standard procedure: updates qe */
       dtimer(&dtime,&itime,-1);
       for (j = 0; j < nxe*nypmx; j++) {
