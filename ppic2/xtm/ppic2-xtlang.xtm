@@ -89,14 +89,14 @@
     ;;    ipbc = particle boundary condition = (0,1,2,3) =
     ;;    (none,2d periodic,2d reflecting,mixed reflecting/periodic)
     ;; local data
-    (let ((mnoff:i32 noff) 
-          (j:i32 0) 
-          (nn:i32 0) 
-          (mm:i32 0) 
-          (np:i32 0) 
-          (mp:i32 0) 
-          (ih:i32 0) 
-          (nh:i32 0) 
+    (let ((mnoff:i32 noff)
+          (j:i32 0)
+          (nn:i32 0)
+          (mm:i32 0)
+          (np:i32 0)
+          (mp:i32 0)
+          (ih:i32 0)
+          (nh:i32 0)
           (nxv2:i32 (* 2 nxv))
           (qtm:float (* qbm dt))
           ;; /* set boundary values */
@@ -214,15 +214,15 @@
     ;;    nxv = first dimension of charge array, must be >= nx+1
     ;;    nypmx = maximum size of particle partition, including guard cells.
     ;; local data                                                            */
-    (let ((mnoff:i32 noff) 
-          (j:i32 0) 
-          (nn:i32 0) 
-          (np:i32 0) 
-          (mm:i32 0) 
+    (let ((mnoff:i32 noff)
+          (j:i32 0)
+          (nn:i32 0)
+          (np:i32 0)
+          (mm:i32 0)
           (mp:i32 0)
-          (dxp:float 0.) 
-          (dyp:float 0.) 
-          (amx:float 0.) 
+          (dxp:float 0.)
+          (dyp:float 0.)
+          (amx:float 0.)
           (amy:float 0.))
       (dotimes (j npp)
         ;; /* find interpolation weights */
@@ -236,7 +236,89 @@
         (set! amy (- 1. dyp))
         (set! np (+ nn 1))
         ;; /* deposit charge */
-        (pset! q (+ np mp) (+ (pref q (+ np mp)) (* dxp dyp))) 
-        (pset! q (+ nn mp) (+ (pref q (+ nn mp)) (* amx dyp))) 
-        (pset! q (+ np mm) (+ (pref q (+ np mm)) (* dxp amy))) 
+        (pset! q (+ np mp) (+ (pref q (+ np mp)) (* dxp dyp)))
+        (pset! q (+ nn mp) (+ (pref q (+ nn mp)) (* amx dyp)))
+        (pset! q (+ np mm) (+ (pref q (+ np mm)) (* dxp amy)))
         (pset! q (+ nn mm) (+ (pref q (+ nn mm)) (* amx amy)))))))
+
+(bind-func cppdsortp2yl:[void,float*,float*,i32*,i32,i32,i32,i32,i32,i32]*
+  (lambda (parta partb npic npp noff nyp idimp npmax nypm1)
+    ;; /* this subroutine sorts particles by y grid
+    ;;    linear interpolation, spatial decomposition in y direction
+    ;;    parta/partb = input/output particle array
+    ;;    part[n][1] = position y of particle n in partition
+    ;;    npic = address offset for reordering particles
+    ;;    npp = number of particles in partition
+    ;;    noff = backmost global gridpoint in particle partition
+    ;;    nyp = number of primary gridpoints in particle partition
+    ;;    idimp = size of phase space
+    ;;    npmax = maximum number of particles in each partition
+    ;;    nypm1 = maximum size of particle partition plus one
+    ;; local data                                                            */
+    (let ((i:i32 0)
+          (j:i32 0)
+          (k:i32 0)
+          (m:i32 0)
+          (mnoff:i32 noff)
+          (nyp1:i32 (+ 1 nyp))
+          (isum:i32 0)
+          (ist:i32 0)
+          (ip:i32 0))
+      ;; /* clear counter array */
+      (dotimes (k nyp1)
+        (pset! npic k 0))
+      ;; /* find how many particles in each grid */
+      (dotimes (j npp)
+        (set! m (convert (pref parta (+ 1 (* idimp j)))))
+        (set! m (- m mnoff))
+        (pset! npic m (+ 1 (pref npic m))))
+      ;; /* find address offset */
+      (dotimes (k nyp1)
+        (set! ist (pref npic k))
+        (pset! npic k isum)
+        (set! isum (+ isum ist)))
+      ;; /* find addresses of particles at each grid and reorder particles */
+      (dotimes (j npp)
+        (set! m (convert (pref parta (+ 1 (* idimp j)))))
+        (set! m (- m mnoff))
+        (set! ip (pref npic m))
+        (dotimes (i idimp)
+          (pset! partb (+ i (* idimp ip)) (pref parta (+ i (* idimp j)))))
+        (pset! npic m (+ 1 ip))))))
+
+(bind-func cppcguard2xl:[void,float*,i32,i32,i32,i32,i32]*
+  (lambda (fxy nyp nx ndim nxe nypmx)
+    ;; /* replicate extended periodic vector field in x direction
+    ;;    linear interpolation, for distributed data
+    ;;    nyp = number of primary (complete) gridpoints in particle partition
+    ;;    nx = system length in x direction
+    ;;    ndim = leading dimension of array fxy
+    ;;    nxe = first dimension of field arrays, must be >= nx+1
+    ;;    nypmx = maximum size of particle partition, including guard cells
+    ;; local data                                                 */
+    (let ((i:i32 0)
+          (k:i32 0)
+          (kk:i32 0)
+          (myp1:i32 (+ nyp 1)))
+      ;; /* replicate edges of extended field */
+      (dotimes (k myp1)
+        (set! kk (* ndim nxe k))
+        (dotimes (i ndim)
+          (pset! fxy (+ i (* ndim nx) kk) (pref fxy (+ i kk))))))))
+
+(bind-func cppaguard2xl:[void,float*,i32,i32,i32,i32]*
+  (lambda (q nyp nx nxe nypmx)
+    ;; /* accumulate extended periodic scalar field in x direction
+    ;;    linear interpolation, for distributed data
+    ;;    nyp = number of primary (complete) gridpoints in particle partition
+    ;;    nx = system length in x direction
+    ;;    nxe = first dimension of field arrays, must be >= nx+1
+    ;;    nypmx = maximum size of particle partition, including guard cells
+    ;; local data                                                 */
+    (let ((k:i32 0)
+          (myp1:i32 (+ nyp 1)))
+      ;; /* accumulate edges of extended field */
+      (dotimes (k myp1)
+        (pset! q (* nxe k) (+ (pref q (* nxe k))
+                              (pref q (+ nx (* nxe k)))))
+        (pset! q (+ nx (* nxe k)) 0.)))))
