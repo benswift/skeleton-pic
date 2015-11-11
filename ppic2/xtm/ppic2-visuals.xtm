@@ -154,7 +154,7 @@
 @param size - point size"
   (let ((stroke_width 2.:f)
         (padding 20.)
-        (colour (NVGcolor 1. 1. 1. .4)))
+        (colour (NVGcolor 1. 1. 1. .2)))
     (lambda (vg bounds:Rect* points:float* npoints:i64 size:float)
       (if (< npoints 1)
           (begin (println "npoints must be at least 1 for scatter_points") -1)
@@ -165,20 +165,20 @@
                 (i 0))
             ;; (nvgFillWidth vg stroke_width)
             (_nvgFillColor vg colour)
-            (nvgBeginPath vg)
             ;; add circles to path
             (dotimes (i npoints)
+              (nvgBeginPath vg)
               (nvgCircle vg
-                         (+ x (* w (/ (pref points (* i idimp)) (convert nx))))
-                         (+ y (* h (- 1. (/ (pref points (+ (* i idimp) 1)) (convert (pref nyp_ptr 0))))))
-                         size))
-            (nvgFill vg)
+                         (+ x (* w (/ (pref points (* i (convert idimp i64))) (convert nx))))
+                         (+ y (* h (- 1. (/ (pref points (+ (* i (convert idimp i64)) 1)) (convert (pref nyp_ptr 0))))))
+                         size)
+              (nvgFill vg))
             0)))))
 
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
     (lambda ()
-      (dv_draw_scatter_points_fixed_size vg bounds part (convert (pref npp_ptr 0)) 3.)
+      (dv_draw_scatter_points_fixed_size vg bounds part (convert (pref npp_ptr 0)) 5.)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -188,24 +188,29 @@
 (bind-func ppic2_visuals_charge_density_draw
   (let ((padding 20.)
         (bounds (Rect 0. 0. (* .5 (convert width)) (convert height)))
-        (tile_fill (NVGcolor .6 1. .1 .5))
-        (gain .000001))
+        (tile_fill (NVGcolor .6 1. .1 .35))
+        (gain 2000.))
     (lambda ()
-      (let ((x (+ (tref bounds 0) (* (tref bounds 2) padding)))
-            (y (+ (tref bounds 1) (* (tref bounds 3) padding)))
-            (w (* (tref bounds 2) (- 1. (* 2. padding))))
-            (h (* (tref bounds 3) (- 1. (* 2. padding)))))
+      (let ((x (+ (tref bounds 0) padding))
+            (y (+ (tref bounds 1) padding))
+            (w (- (tref bounds 2) (* 2. padding)))
+            (h (- (tref bounds 3) (* 2. padding)))
+            (i 0))
         ;; add circles to path
         (doloop (col nx)
           (doloop (row ny)
+            (tset! tile_fill 3 (* gain (pref qe (+ (* col nxe) row))))
             (_nvgFillColor vg tile_fill)
             (nvgBeginPath vg)
             (nvgCircle vg
                        (+ x (* w (/ (convert row float) (convert nx float))))
                        (+ y (* h (- 1. (/ (convert col float) (convert ny float)))))
-                       (* gain (pref qe (+ (* col nxe) row))))
+                       (* gain 10. (pref qe (+ (* col nxe) row))))
             (nvgFill vg)))
         void))))
+
+;; (/ (convert width float) (convert nx float))
+;; (/ (convert height float) (convert ny float))
 
 ;; histograms (currently taken from math.xtm, but with some modifications)
 
@@ -333,10 +338,10 @@
 ;; (bind-func external_field
 ;;   (lambda ()
 ;;     (doloop (i (convert np i64))
-;;       (if (and (< (pref part (+ (* i idimp) 1)) (+ (convert nyh) 2.))
-;;                (> (pref part (+ (* i idimp) 1)) (- (convert nyh) 2.))
+;;       (if (and (< (pref part (+ (* i (convert idimp i64)) 1)) (+ (convert nyh) 2.))
+;;                (> (pref part (+ (* i (convert idimp i64)) 1)) (- (convert nyh) 2.))
 ;;                (< (random) .1))
-;;           (pset! part (+ (* i idimp) 3) (* -1. (pref part (+ (* i idimp) 3))))))))
+;;           (pset! part (+ (* i (convert idimp i64)) 3) (* -1. (pref part (+ (* i (convert idimp i64)) 3))))))))
 
 ;; load indicators
 
@@ -347,11 +352,16 @@
 
 (bind-lib libc getloadavg [i32,double*,i32]*)
 
-(call-as-xtlang
- (let ((load:double* (salloc 3)))
-   (if (<> (getloadavg load 3) -1)
-       (doloop (i 3)
-         (println (pref load i))))))
+(bind-func print_loadavg
+  (lambda ()
+    (let ((load:double* (salloc 3)))
+      (if (<> (getloadavg load 3) -1)
+          (begin
+            (println "load average")
+            (println " 1 min:"(pref load 0))
+            (println " 5 min:"(pref load 1))
+            (println "15 min:"(pref load 2))
+            (println))))))
 
 ;; draw all the things
 
@@ -361,8 +371,8 @@
     (nvg_clear)
     (nvgBeginFrame vg width height pixel_ratio)
     (nvgResetTransform vg)
-    ;; (ppic2_visuals_charge_density_draw)
-    (ppic2_visuals_particles_draw)
+    (ppic2_visuals_charge_density_draw)
+    ;; (ppic2_visuals_particles_draw)
     (ppic2_qt_spectrum_draw)
     ;; (ppic2_visuals_field_draw)
     (ppic2_visuals_vhist_draw)
