@@ -7,7 +7,7 @@
 
 (bind-val REMOTE_SOCKET i32 -1)
 
-(bind-val nanomsg-port i32 12000)
+(bind-val nanomsg_port i32 12000)
 
 (bind-func remote_create_socket
   (lambda ()
@@ -16,7 +16,7 @@
       (if (< REMOTE_SOCKET 0)
           (set! REMOTE_SOCKET (nnsock_create NN_REP)))
       (sprintf address address_start)
-      (sprintf (pref-ptr address (strlen address)) "%d" nanomsg-port)
+      (sprintf (pref-ptr address (strlen address)) "%d" nanomsg_port)
       (nn_bind REMOTE_SOCKET address))))
 
 (remote_create_socket)

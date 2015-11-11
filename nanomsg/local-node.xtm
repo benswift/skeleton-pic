@@ -23,10 +23,6 @@
       (nn_shutdown (aref LOCAL_SOCKET_ARRAY i) 0))
     (set! LOCAL_SOCKET_ARRAY_SIZE 0:i32)))
 
-;; create & connect sockets
-(local_create_sockets 1)
-(local_connect_sockets 12000)
-
 (bind-func local_response_handler
   (lambda (node_index:i32 buf:i8* buflen:i64)
     (printf "received response from socket %d: %s\n" node_index buf)
@@ -56,9 +52,6 @@
             (println "stopping local_nonblocking_read loop")
             0)))))
 
-;; start the read loop running
-(local_nonblocking_read_loop)
-
 (bind-func local_send_to_node
   (lambda (node_idx msg msglen)
     (let ((sock (aref LOCAL_SOCKET_ARRAY node_idx))
@@ -75,12 +68,4 @@
         (if (or (< bytes 0) (< bytes (convert msglen)))
             (nn_println_strerror)
             void)))))
-
-;; try it out
-(local_send_to_all "test" 5)
-
-;; kill everything
-;; (call-as-xtlang
-;;  (nonblocking_read_loop.continue #f)
-;;  (local_disconnect_sockets))
 
