@@ -21,6 +21,8 @@
 
 ;;; Code:
 
+(set! *impc:compiler:message:level* 'low)
+
 (if (not (and (impc:ti:globalvar-exists? "indx")
               (impc:ti:globalvar-exists? "indy")
               (impc:ti:globalvar-exists? "npx")
@@ -489,6 +491,8 @@
       (ppic2_visuals)
       ;; (callback (+ (now) (/ 44100 5)) ppic2_loop)
       (callback (now) ppic2_loop))))
+
+(set! *impc:compiler:message:level* 'high)
 
 (impc:aot:insert-footer "xtmppic2")
 (define *xtmlib-ppic2-loaded* #t)
