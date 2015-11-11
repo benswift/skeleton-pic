@@ -125,6 +125,21 @@
                                         (tref (pref-ptr qt i) 1)))))))
       (dv_draw_bars vg bounds spec (convert nbins)))))
 
+(bind-func ppic2_qe_spectrum_draw
+  (let ((nbins (/ (* nxe (pref nypmx_ptr 0)) 2))
+        (spec:float* (zalloc nbins))
+        (bounds:Rect* (Rect (* (convert width) .5)
+                            (* (convert height) .5)
+                            (* (convert width) .5)
+                            (* (convert height) .5))))
+    (lambda ()
+      (doloop (i nbins)
+        (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr (cast qe Complexf*) i) 0)
+                                        (tref (pref-ptr (cast qe Complexf*) i) 0))
+                                     (* (tref (pref-ptr (cast qe Complexf*) i) 1)
+                                        (tref (pref-ptr (cast qe Complexf*) i) 1)))))))
+      (dv_draw_bars vg bounds spec (convert nbins)))))
+
 ;;;;;;;;;;;;;;;
 ;; particles ;;
 ;;;;;;;;;;;;;;;
