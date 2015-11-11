@@ -19,10 +19,6 @@
 
 ;;; Code:
 
-(if (not (defined? '*skeleton-pic-path*))
-    (eval '(define *skeleton-pic-path* "/Users/ben/Code/src/skeleton-pic/")
-          (interaction-environment)))
-
 ;; need to set up the size of our problem
 
 ;; spatial grid size is 2^indx x 2^indy
@@ -32,10 +28,12 @@
 (bind-val npx i32 100)
 (bind-val npy i32 100)
 
-;; now load the library
-(sys:load (string-append *skeleton-pic-path* "ppic2/xtm/ppic2.xtm"))
+;; now load the libraries - assumes we're running in the skeleton-pic directory
+(sys:load "ppic2/xtm/ppic2.xtm")
+(sys:load "nanomsg/remote-node.xtm")
+
+;; if we're all running locally
+;; (sys:load "ppic2/xtm/ppic2-visuals.xtm")
+
+;; start the loop running
 (ppic2_loop)
-
-;; if you want the visuals (root node only)
-
-;; (sys:load (string-append *skeleton-pic-path* "ppic2/xtm/ppic2-visuals.xtm"))
