@@ -1,0 +1,38 @@
+;;; ppic2.xtm:examples -- example of the pic code in use
+
+;; Author: Ben Swift
+;; Keywords: extempore
+;; Required dylibs: libcpic2.dylib
+
+;;; Commentary:
+
+;; to run this with MPI, you'll need an appfile (e.g. ppic2.app), which will look
+;; something like:
+
+;; -np 1 extempore --port 7099 --run path/to/ppic2.xtm
+;; -np 1 extempore --port 7097 --run path/to/ppic2.xtm
+;; ... (depending on how many processes you want to run)
+
+;; then, run extempore with mpi run:
+
+;; > mpirun --app ppic2.app
+
+;;; Code:
+
+(sys:load "ppic2/xtm/ppic2-visuals.xtm")
+(sys:load "nanomsg/local-node.xtm")
+
+;; create & connect sockets
+(local_create_sockets 2)
+(local_connect_sockets 12000)
+
+;; start the read loop running
+(local_nonblocking_read_loop)
+
+(local_send_to_all "test" 5)
+
+
+;; kill everything
+;; (call-as-xtlang
+;;  (nonblocking_read_loop.continue #f)
+;;  (local_disconnect_sockets))
