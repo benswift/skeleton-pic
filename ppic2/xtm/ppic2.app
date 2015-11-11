@@ -1,0 +1,2 @@
+-np 1 extempore --port 7099 --run /Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-run.xtm
+-np 1 extempore --port 7097 --run /Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-run.xtm
