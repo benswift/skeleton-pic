@@ -42,8 +42,8 @@
 
 (impc:aot:insert-header "xtmppic2")
 
-;; (sys:load "libs/core/math.xtm")
-(bind-type Complexf <float,float>) ;; the only thing we use from math.xtm
+(sys:load "libs/core/math.xtm")
+;; (bind-type Complexf <float,float>) ;; the only thing we use from math.xtm
 
 ;; (sys:load "libs/contrib/mpi.xtm")
 
