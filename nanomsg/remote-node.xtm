@@ -47,9 +47,11 @@
 ;; (bind-poly get_nth_particles get_nth_particles_single)
 
 (bind-func remote_response_handler
-  (lambda (buf:i8* buflen:i64)
-    (nn_send REMOTE_SOCKET buf buflen 0)
-    void))
+  (let ((response:i8* (zalloc 1024)))
+    (sprintf response "a response!")
+    (lambda (buf:i8* buflen:i64)
+      (nn_send REMOTE_SOCKET response (+ 1 (strlen response)) 0)
+      void)))
 
 (bind-func remote_nonblocking_read
   (let ((buflen:i64 1024)
@@ -60,16 +62,17 @@
           (let ((nbytes (nn_recv REMOTE_SOCKET buf buflen NN_DONTWAIT)))
             ;; if we get some bytes, trigger the callback
             (if (> nbytes 0)
-                (remote_response_handler buf buflen)))))))
+                (remote_response_handler buf (convert nbytes))
+                void))))))
 
 (bind-func remote_nonblocking_read_loop
   (let ((continue #t))
     (lambda ()
       (remote_nonblocking_read)
       (if continue
-          (callback (+ (now) 500) remote_nonblocking_read)
+          (callback (+ (now) 500) remote_nonblocking_read_loop)
           (begin
-            (println "stopping nonblocking_read loop")
+            (println "stopping nonblocking_read_loop")
             0)))))
 
 (remote_nonblocking_read_loop)

@@ -29,7 +29,7 @@
 
 (bind-func local_response_handler
   (lambda (node_index:i32 buf:i8* buflen:i64)
-    (printf "received response from socket %d\n" node_index)
+    (printf "received response from socket %d: %s\n" node_index buf)
     ;; put the parts back together
     void))
 
