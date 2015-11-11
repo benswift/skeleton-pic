@@ -154,8 +154,8 @@
             ;; add circles to path
             (dotimes (i npoints)
               (nvgCircle vg
-                         (+ x (* w (/ (pref points (* i 4)) (convert nx))))
-                         (+ y (* h (- 1. (/ (pref points (+ (* i 4) 1)) (convert ny)))))
+                         (+ x (* w (/ (pref points (* i idimp)) (convert nx))))
+                         (+ y (* h (- 1. (/ (pref points (+ (* i idimp) 1)) (convert (pref nyp_ptr 0))))))
                          size))
             (nvgFill vg)
             0)))))
@@ -163,7 +163,7 @@
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
     (lambda ()
-      (dv_draw_scatter_points_fixed_size vg bounds part (convert np) 3.)
+      (dv_draw_scatter_points_fixed_size vg bounds part (convert (pref npp_ptr 0)) 3.)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -173,7 +173,8 @@
 (bind-func ppic2_visuals_charge_density_draw
   (let ((padding 20.)
         (bounds (Rect 0. 0. (* .5 (convert width)) (convert height)))
-        (tile_fill (NVGcolor .6 1. .1 .5)))
+        (tile_fill (NVGcolor .6 1. .1 .5))
+        (gain .000001))
     (lambda ()
       (let ((x (+ (tref bounds 0) (* (tref bounds 2) padding)))
             (y (+ (tref bounds 1) (* (tref bounds 3) padding)))
@@ -187,7 +188,7 @@
             (nvgCircle vg
                        (+ x (* w (/ (convert row float) (convert nx float))))
                        (+ y (* h (- 1. (/ (convert col float) (convert ny float)))))
-                       (* 1000. (pref qe (+ (* col nxe) row))))
+                       (* gain (pref qe (+ (* col nxe) row))))
             (nvgFill vg)))
         void))))
 
@@ -294,9 +295,9 @@
         (font_size 30.))
     (lambda ()
       ;; x histogram
-      (histogram vhist_data part (convert np) (* -1. histrange) histrange vhist_nbins 4 2)
+      (histogram vhist_data part (convert (pref npp_ptr 0)) (* -1. histrange) histrange vhist_nbins 4 2)
       ;; y histogram
-      (histogram (pref-ptr vhist_data vhist_nbins) part (convert np) (* -1. histrange) histrange vhist_nbins 4 3)
+      (histogram (pref-ptr vhist_data vhist_nbins) part (convert (pref npp_ptr 0)) (* -1. histrange) histrange vhist_nbins 4 3)
       ;; apply some scaling
       (doloop (i (* 3 vhist_nbins))
         (tset! (pref-ptr vhist_data i) 0 (+ .5 (/ (tref (pref-ptr vhist_data i) 0) (* 2. histrange))))
@@ -317,10 +318,10 @@
 ;; (bind-func external_field
 ;;   (lambda ()
 ;;     (doloop (i (convert np i64))
-;;       (if (and (< (pref part (+ (* i 4) 1)) (+ (convert nyh) 2.))
-;;                (> (pref part (+ (* i 4) 1)) (- (convert nyh) 2.))
+;;       (if (and (< (pref part (+ (* i idimp) 1)) (+ (convert nyh) 2.))
+;;                (> (pref part (+ (* i idimp) 1)) (- (convert nyh) 2.))
 ;;                (< (random) .1))
-;;           (pset! part (+ (* i 4) 3) (* -1. (pref part (+ (* i 4) 3))))))))
+;;           (pset! part (+ (* i idimp) 3) (* -1. (pref part (+ (* i idimp) 3))))))))
 
 ;; load indicators
 
