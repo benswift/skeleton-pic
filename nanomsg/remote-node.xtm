@@ -7,8 +7,6 @@
 
 (bind-val REMOTE_SOCKET i32 -1)
 
-(bind-val nanomsg_port i32 12000)
-
 (bind-func remote_create_socket
   (lambda ()
     (let ((address_start "tcp://*:")
