@@ -467,7 +467,6 @@
             ;; "Initial"
             (ppic2_print_energies)))
 
-    ;; ntime is incremented in the scheme callback
     (set! ntime (+ ntime 1))
     ntime))
 
