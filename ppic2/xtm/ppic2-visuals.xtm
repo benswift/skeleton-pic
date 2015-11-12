@@ -101,7 +101,7 @@
 
 (bind-func ppic2_visuals_field_draw
   (let ((bounds (Rect 0. 0. (convert width) (convert height))))
-    (lambda ()
+    (lambda (idx:i32)
       (ppic2_visuals_copy_field_data fxye .1)
       (dv_draw_line_segments vg bounds field_arrows 1000)
       void)))
@@ -117,7 +117,7 @@
                             (* (convert height) .5)
                             (* (convert width) .5)
                             (* (convert height) .5))))
-    (lambda ()
+    (lambda (idx:i32)
       (doloop (i nbins)
         (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr qt i) 0)
                                         (tref (pref-ptr qt i) 0))
@@ -132,7 +132,7 @@
                             (* (convert height) .5)
                             (* (convert width) .5)
                             (* (convert height) .5))))
-    (lambda ()
+    (lambda (idx:i32)
       (doloop (i nbins)
         (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr (cast qe Complexf*) i) 0)
                                         (tref (pref-ptr (cast qe Complexf*) i) 0))
@@ -177,8 +177,8 @@
 
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
-    (lambda ()
-      (dv_draw_scatter_points_fixed_size vg bounds part (convert (pref npp_ptr 0)) 5.)
+    (lambda (idx:i32 npoints)
+      (dv_draw_scatter_points_fixed_size vg bounds npoints 100 5.)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +190,7 @@
         (bounds (Rect 0. 0. (* .5 (convert width)) (convert height)))
         (tile_fill (NVGcolor .6 1. .1 .35))
         (gain 2000.))
-    (lambda ()
+    (lambda (idx:i32 nx:i32 ny:i32 noff:i32)
       (let ((x (+ (tref bounds 0) padding))
             (y (+ (tref bounds 1) padding))
             (w (- (tref bounds 2) (* 2. padding)))
@@ -212,44 +212,10 @@
 ;; (/ (convert width float) (convert nx float))
 ;; (/ (convert height float) (convert ny float))
 
-;; histograms (currently taken from math.xtm, but with some modifications)
-
-(bind-type HistBin <float,float>
-  "a histogram bin: <lower,count>")
-
-(bind-func HistBin_print
-  "specialised print function for HistBin*"
-  (lambda (histbin:HistBin*)
-    (if (null? histbin)
-        (printf "<HistBin 0x0>")
-        (printf "<HistBin %p minval=%f count=%f>"
-                histbin
-                (convert (tref histbin 0) double)
-                (convert (tref histbin 1) double)))
-    void))
-
-(bind-poly print HistBin_print)
-
-(bind-func HistBin_toString
-  "specialised toString function for HistBin*"
-  (lambda (histbin:HistBin*)
-    (let ((str:i8* (salloc 256)))
-      (if (null? histbin)
-          (sprintf str "<HistBin 0x0>")
-          
-          (sprintf str
-                   "<HistBin %p minval=%f count=%f>"
-                   histbin
-                   (convert (tref histbin 0) double)
-                   (convert (tref histbin 1) double)))
-      (Str str))))
-
-(bind-poly toString HistBin_toString)
-
 ;; this version takes extra arguments to do with the stride required
 ;; for the part data buffer
 
-(bind-func histogram_float_full
+(bind-func histogram_float_full_ampdc
   (lambda (hist:HistBin* buf:float* buflen lower upper nbins amp dc)
     (let ((current_bin:HistBin* null)
           (range (- upper lower))
@@ -273,7 +239,7 @@
               (tset! current_bin 1 (+ (tref current_bin 1) 1.0)))
             hist)))))
 
-(bind-func histogram_float_range
+(bind-func histogram_float_range_ampdc
   "like the full version, but use the min and max values in the buffer as upper and lower"
   (lambda (hist:HistBin* buf:float* buflen nbins amp dc)
     (let ((lower 0.0)
@@ -284,56 +250,40 @@
             (set! lower (pref buf i)))
         (if (> (pref buf i) upper)
             (set! upper (pref buf i))))
-      (histogram_float_full hist buf buflen lower upper nbins amp dc))))
+      (histogram_float_full_ampdc hist buf buflen lower upper nbins amp dc))))
 
-(bind-poly histogram histogram_float_full)
-(bind-poly histogram histogram_float_range)
+(bind-poly histogram histogram_float_full_ampdc)
+(bind-poly histogram histogram_float_range_ampdc)
 
 ;; now for the actual histogram visuals
 
-(bind-val vhist_nbins i64 100)
-(bind-val vhist_data HistBin*)
-
-(bind-func ppic2_visuals_vhist_init
-  (lambda ()
-    (let ((hb:HistBin* (halloc (* vhist_nbins 3))))
-      (set! vhist_data hb))))
-
-(ppic2_visuals_vhist_init)
-
-(bind-func ppic2_visuals_vhist_draw
-  (let ((bounds (Rect (* (convert width) .5) 0.
-                      (* (convert width) .5) (* (convert height) .5)))
-        (xcolor (NVGcolor 1. 0. 0. 1.))
-        (xrect (Rect (tref bounds 0) (tref bounds 1)
-                     (/ (tref bounds 2) 2.) (tref bounds 3)))
-        (ycolor (NVGcolor 0. 1. 0. 1.))
-        (yrect (Rect (+ (tref bounds 0) (/ (tref bounds 2) 2.)) (tref bounds 1)
-                     (/ (tref bounds 2) 2.) (tref bounds 3)))
-        (histrange 5.)
-        (histscale .001)
-        (font_size 30.))
-    (lambda ()
-      ;; x histogram
-      (histogram vhist_data part (convert (pref npp_ptr 0)) (* -1. histrange) histrange vhist_nbins 4 2)
-      ;; y histogram
-      (histogram (pref-ptr vhist_data vhist_nbins) part (convert (pref npp_ptr 0)) (* -1. histrange) histrange vhist_nbins 4 3)
-      ;; apply some scaling
-      (doloop (i (* 3 vhist_nbins))
-        (tset! (pref-ptr vhist_data i) 0 (+ .5 (/ (tref (pref-ptr vhist_data i) 0) (* 2. histrange))))
-        (tset! (pref-ptr vhist_data i) 1 (* (tref (pref-ptr vhist_data i) 1) histscale)))
+(bind-func dv_draw_histogram
+  (let ((gain .001)
+        (font_size 20.))
+    (lambda (vg bounds:Rect* hist:HistBin* histlen title)
+      ;; apply some x/y scaling (in-place)
+      (doloop (i histlen)
+        (tset! hist 0 (/ (convert i) (convert histlen)))
+        (tset! hist 1 (* (tref (pref-ptr hist i) 1) gain)))
       ;; nvg labels
       (nvgFontSize vg font_size)
       ;; vx histogram
-      (dv_draw_title vg xrect "vx")
-      (dv_draw_axes_2D vg xrect)
+      (dv_draw_title vg bounds title)
+      (dv_draw_axes_2D vg bounds)
       (dv_draw_line.stroke_width (convert (+ (* (cos (* .01 (convert ntime))) 2.) 3.) float))
-      (dv_draw_line vg xrect (cast vhist_data float*) vhist_nbins)
-      ;; ;; vy histogram
-      (dv_draw_title vg yrect "vy")
-      (dv_draw_axes_2D vg yrect)
-      (dv_draw_line vg yrect (cast (pref-ptr vhist_data vhist_nbins) float*) vhist_nbins)
+      (dv_draw_line vg bounds (cast hist float*) histlen)
       void)))
+
+(bind-func ppic2_visuals_histogram_draw
+  (let ((bounds (Rect 0. 0. 0. 0.))
+        (hist_height:float (/ (convert height) (convert (* REMOTE_LOCATIONS REMOTE_NODES_PER_LOCATION)))))
+    (lambda (idx)
+      ;; vx histogram
+      (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
+      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 4) 0) RESPONSE_VHIST_BIN_COUNT "vx")
+      ;; vy histogram
+      (tset! bounds 0 (* .75 (convert width)))
+      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 5) 0) RESPONSE_VHIST_BIN_COUNT "vy"))))
 
 ;; (bind-func external_field
 ;;   (lambda ()
@@ -363,23 +313,3 @@
             (println "15 min:"(pref load 2))
             (println))))))
 
-;; draw all the things
-
-(bind-func ppic2_visuals
-  (lambda ()
-    ;; nanovg
-    (nvg_clear)
-    (nvgBeginFrame vg width height pixel_ratio)
-    (nvgResetTransform vg)
-    (ppic2_visuals_charge_density_draw)
-    ;; (ppic2_visuals_particles_draw)
-    (ppic2_qt_spectrum_draw)
-    ;; (ppic2_visuals_field_draw)
-    (ppic2_visuals_vhist_draw)
-    (nvgEndFrame vg)
-    ;; poll events, swap buffers
-    (glfwPollEvents)
-    (glfwSwapBuffers window)))
-
-;; start it running
-;; (ppic2_visuals_loop (now) (/ 1. 30.))

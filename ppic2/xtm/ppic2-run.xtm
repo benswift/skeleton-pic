@@ -21,19 +21,36 @@
 
 ;; need to set up the size of our problem
 
-;; spatial grid size is 2^indx x 2^indy
-(bind-val indx i32 7)
-(bind-val indy i32 7)
-;; np{x,y} is number of particles in {x,y} direction
-(bind-val npx i32 100)
-(bind-val npy i32 100)
-
 ;; now load the libraries - assumes we're running in the skeleton-pic directory
 (sys:load "ppic2/xtm/ppic2.xtm")
-(sys:load "nanomsg/remote-node.xtm")
 
 ;; if we're all running locally
 ;; (sys:load "ppic2/xtm/ppic2-visuals.xtm")
+
+(bind-val nanomsg_port i32 9000)
+
+(sys:load "nanomsg/remote-node.xtm")
+
+(bind-func remote_response_handler
+  (let ((resp:NodeResponseData* (zalloc))
+        (resp_len RESPONSE_MSG_SIZE)) ;; make sure you update this if you change the NodeResponseData type
+    (lambda (buf:i8* buflen:i64)
+      (tset! resp 0 (- kstrt 1))
+      (tset! resp 1 ntime)
+      (let ((part_arr (tref-ptr resp 2))
+            (qt_arr (tref-ptr resp 3))
+            (vxhist_arr (tref-ptr resp 4))
+            (vyhist_arr (tref-ptr resp 5)))
+        (doloop (i RESPONSE_PARTICLE_COUNT)
+          (aset! part_arr i (pref part i))
+          ;; should fix this - probably want to pass the whole qt array
+          (aset! qt_arr i (pref qt i))
+          ;; histograms
+          ;; (aset! (tref-ptr resp 4) i (pref-ptr vhist_data i))
+          ;; (aset! (tref-ptr resp 5) i (pref-ptr vhist_data (+ i 100)))
+          void))
+      (nn_send REMOTE_SOCKET (cast resp i8*) resp_len 0)
+      void)))
 
 ;; start the loop running
 (ppic2_loop)
