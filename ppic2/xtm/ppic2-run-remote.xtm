@@ -90,7 +90,7 @@
     (lambda (buf:i8* buflen:i64)
       (tset! nrm 0 (- kstrt 1))
       (tset! nrm 1 ntime)
-      (let ((hist_range 30.)
+      (let ((hist_range 100.)
             (part_arr (tref-ptr nrm 2))
             (part_stride 20)
             (qt_arr (tref-ptr nrm 3))

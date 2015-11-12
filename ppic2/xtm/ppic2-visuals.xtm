@@ -245,7 +245,7 @@
         (tset! sum_hb 1 (* (tref sum_hb 1) gain))))))
 
 (bind-func ppic2_visuals_histogram_draw
-  (let ((gain .00001)
+  (let ((gain .000004)
         (font_size:float 24.)
         (bounds (Rect 0. 0. 0. 0.))
         (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT))))
