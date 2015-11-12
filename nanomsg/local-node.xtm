@@ -29,27 +29,27 @@
     ;; put the parts back together
     void))
 
-(bind-func local_nonblocking_read
-  (let ((buflen:i64 1024)
-        (buf:i8* (zalloc buflen)))
+(bind-func local_nonblocking_nanomsg_loop
+  (let ((sndbuflen:i64 1024)
+        (sndbuf:i8* (zalloc sndbuflen))
+        (rcvbuflen:i64 RESPONSE_MSG_SIZE)
+        (rcvbuf:i8* (zalloc rcvbuflen))
+        (continue #t))
+    (sprintf sndbuf "ppic2_data")
     (lambda ()
       (doloop (i LOCAL_SOCKET_ARRAY_SIZE)
         (let ((sock (aref LOCAL_SOCKET_ARRAY i)))
           (if (< sock 0)
               (nn_println_strerror)
-              (let ((nbytes (nn_recv sock buf buflen NN_DONTWAIT)))
+              (let ((nrcvbytes (nn_recv sock rcvbuf rcvbuflen NN_DONTWAIT))
+                    (nsndbytes (nn_send sock sndbuf sndbuflen 0)))
                 ;; if we get some bytes, trigger the callback
-                (if (> nbytes 0)
-                    (local_response_handler i buf buflen)))))))))
-
-(bind-func local_nonblocking_read_loop
-  (let ((continue #t))
-    (lambda ()
-      (local_nonblocking_read)
+                (if (> nrcvbytes 0)
+                    (local_response_handler i rcvbuf rcvbuflen))))))
       (if continue
-          (callback (+ (now) 500) local_nonblocking_read_loop)
+          (callback (+ (now) 500) local_nonblocking_nanomsg_loop)
           (begin
-            (println "stopping local_nonblocking_read loop")
+            (println "stopping local_nonblocking_nanomsg loop")
             0)))))
 
 (bind-func local_send_to_node

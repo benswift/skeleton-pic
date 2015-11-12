@@ -32,11 +32,10 @@
 (local_create_sockets (call-as-xtlang (* REMOTE_LOCATIONS REMOTE_NODES_PER_LOCATION)))
 (local_connect_sockets 9000)
 
-;; start the read loop running
-(local_nonblocking_read_loop)
+(call-as-xtlang (println "LOCAL_SOCKET_ARRAY_SIZE:" LOCAL_SOCKET_ARRAY_SIZE))
 
-;; test it
-(local_send_to_all (string-append "test" (number->string (random 10))) 6)
+;; start the read loop running
+(local_nonblocking_nanomsg_loop)
 
 ;; visualisation data (streamed back from remote nodes)
 
@@ -45,11 +44,15 @@
 (bind-func local_response_handler
   (lambda (node_index:i32 buf:i8* buflen:i64)
     (if (<> buflen RESPONSE_MSG_SIZE)
-        (println "msg doesn't seem to be a NodeResponseData, dropping..."))
+        (println "msg doesn't seem to be a NodeResponseData, dropping..." buflen))
     (let ((dest_ptr (cast (aref-ptr RESPONSE_DATA_ARRAY node_index) i8*))
           (i 0))
       (memcpy dest_ptr buf buflen))
     void))
+
+;; (call-as-xtlang
+;;  (doloop (i 10)
+;;    (println (aref (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY 0) 2) i))))
 
 (sys:load "ppic2/xtm/ppic2-visuals.xtm")
 
@@ -59,25 +62,28 @@
     (nvg_clear)
     (nvgBeginFrame vg width height pixel_ratio)
     (nvgResetTransform vg)
-    (doloop (i LOCAL_SOCKET_ARRAY_SIZE)
-      (ppic2_visuals_charge_density_draw (convert i) nx ny 0:i32)
-      ;; (ppic2_visuals_particles_draw i)
-      (ppic2_qt_spectrum_draw i)
-      ;; (ppic2_visuals_field_draw i)
-      (ppic2_visuals_histogram_draw i))
+    (let ((i:i32 0))
+      (dotimes (i LOCAL_SOCKET_ARRAY_SIZE)
+        ;; (ppic2_visuals_charge_density_draw i nx ny 0:i32)
+        (ppic2_visuals_particles_draw i 5.)
+        (ppic2_qt_spectrum_draw i)
+        ;; (ppic2_visuals_field_draw i)
+        (ppic2_visuals_histogram_draw (convert i))))
     (nvgEndFrame vg)
     ;; poll events, swap buffers
     (glfwPollEvents)
     (glfwSwapBuffers window)))
 
-(bind-func pbpic_visuals_loop
+(bind-func ppic_visuals_loop
   (lambda (delta_t:double)
     (ppic2_visuals)
-    (callback (+ (now) (convert (* 44100. delta_t))) pbpic_visuals_loop delta_t)))
+    (callback (+ (now) (convert (* 44100. delta_t))) ppic_visuals_loop delta_t)))
 
-(pbpic_visuals_loop (now) (/ 1. 30))
+(ppic_visuals_loop (/ 1. 30))
 
-(bind-func pbpic_visuals_loop
-  (lambda (time:i64 delta_t:double)
-    (println "pbpic_visuals_loop callback stopped")
-    #f))
+;; (bind-func pbpic_visuals_loop
+;;   (lambda (time:i64 delta_t:double)
+;;     (println "pbpic_visuals_loop callback stopped")
+;;     #f))
+
+(ppic2_visuals)

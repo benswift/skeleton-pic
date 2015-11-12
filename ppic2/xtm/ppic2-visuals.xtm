@@ -177,8 +177,8 @@
 
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
-    (lambda (idx:i32 npoints)
-      (dv_draw_scatter_points_fixed_size vg bounds npoints 100 5.)
+    (lambda (idx:i32 size)
+      (dv_draw_scatter_points_fixed_size vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 2) 0) RESPONSE_PARTICLE_COUNT size)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
