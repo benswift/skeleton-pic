@@ -25,7 +25,7 @@
 ;; (sys:load "ppic2/xtm/ppic2.xtm")
 (sys:load "libs/core/math.xtm")
 (sys:load "libs/external/nanomsg.xtm")
-(sys:load "ppic2/xtm/ppic2-common.xtm")
+(sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-common.xtm")
 
 (bind-val LOCAL_SOCKET_ARRAY |64,i32|)
 (bind-val LOCAL_SOCKET_ARRAY_SIZE i32 64)
