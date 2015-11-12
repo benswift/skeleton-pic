@@ -223,8 +223,8 @@
     (lambda (vg bounds:Rect* hist:HistBin* histlen title)
       ;; apply some x/y scaling (in-place)
       (doloop (i histlen)
-        (tset! hist 0 (/ (convert i) (convert histlen)))
-        (tset! hist 1 (* (tref (pref-ptr hist i) 1) gain)))
+        (tset! (pref-ptr hist i) 0 (/ (convert i float) (convert histlen float)))
+        (tset! (pref-ptr hist i) 1 (* (tref (pref-ptr hist i) 1) gain)))
       ;; nvg labels
       (nvgFontSize vg font_size)
       ;; vx histogram
