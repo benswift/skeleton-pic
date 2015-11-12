@@ -22,18 +22,20 @@
 
 ;;; Code:
 
-(sys:load "ppic2/xtm/ppic2.xtm")
+;; (sys:load "ppic2/xtm/ppic2.xtm")
+(sys:load "libs/core/math.xtm")
 (sys:load "libs/external/nanomsg.xtm")
+(sys:load "ppic2/xtm/ppic2-common.xtm")
 
 (bind-val LOCAL_SOCKET_ARRAY |64,i32|)
 (bind-val LOCAL_SOCKET_ARRAY_SIZE i32 64)
-(bind-val LOCAL_START_PORT i32 9000)
+(bind-val LOCAL_START_PORT i32 13000)
 
 (bind-val REMOTE_LOCATION_COUNT i64 1)
-(bind-val REMOTE_NODES_PER_LOCATION i64 8)
+(bind-val REMOTE_NODES_PER_LOCATION i64 32)
 (bind-val NRM_ARRAY |32,NodeResponseMsg|) ;; size should be at least LOCAL_SOCKET_ARRAY_SIZE
 
-(sys:load "ppic2/xtm/ppic2-visuals.xtm")
+(sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-visuals.xtm")
 
 (bind-func local_create_sockets
   (lambda (nsock:i32)
@@ -52,13 +54,15 @@
   (lambda ()
     (doloop (i LOCAL_SOCKET_ARRAY_SIZE)
       (nn_close (aref LOCAL_SOCKET_ARRAY i))
-      (nn_shutdown (aref LOCAL_SOCKET_ARRAY i) 0))
-    (set! LOCAL_SOCKET_ARRAY_SIZE 0:i32)))
+      (nn_shutdown (aref LOCAL_SOCKET_ARRAY i) 0))))
 
 (bind-func local_response_handler
   (lambda (node_index:i32 buf:i8* buflen:i64)
-    (printf "received response from socket %d: %s\n" node_index buf)
-    ;; put the parts back together
+    (if (<> buflen NRM_TYPE_SIZE)
+        (println "msg doesn't seem to be a NodeResponseMsg, dropping..." buflen))
+    (let ((dest_ptr (cast (aref-ptr NRM_ARRAY node_index) i8*))
+          (i 0))
+      (memcpy dest_ptr buf buflen))
     void))
 
 (bind-func local_nonblocking_nanomsg_loop
@@ -74,7 +78,7 @@
           (if (< sock 0)
               (nn_println_strerror)
               (let ((nrcvbytes (nn_recv sock rcvbuf rcvbuflen NN_DONTWAIT))
-                    (nsndbytes (nn_send sock sndbuf sndbuflen 0)))
+                    (nsndbytes (nn_send sock sndbuf sndbuflen NN_DONTWAIT)))
                 ;; if we get some bytes, trigger the callback
                 (if (> nrcvbytes 0)
                     (local_response_handler i rcvbuf rcvbuflen))))))
@@ -112,15 +116,6 @@
 
 ;; visualisation data (streamed back from remote nodes)
 
-(bind-func local_response_handler
-  (lambda (node_index:i32 buf:i8* buflen:i64)
-    (if (<> buflen NRM_TYPE_SIZE)
-        (println "msg doesn't seem to be a NodeResponseMsg, dropping..." buflen))
-    (let ((dest_ptr (cast (aref-ptr NRM_ARRAY node_index) i8*))
-          (i 0))
-      (memcpy dest_ptr buf buflen))
-    void))
-
 (bind-func ppic2_visuals
   (lambda ()
     ;; nanovg
@@ -131,9 +126,10 @@
       (dotimes (i LOCAL_SOCKET_ARRAY_SIZE)
         ;; (ppic2_visuals_charge_density_draw i nx ny 0:i32)
         (ppic2_visuals_particles_draw i 5.)
-        (ppic2_qt_spectrum_draw i)
+        ;; (ppic2_qt_spectrum_draw i)
         ;; (ppic2_visuals_field_draw i)
-        (ppic2_visuals_histogram_draw i)))
+        (ppic2_visuals_histogram_draw i)
+        void))
     (nvgEndFrame vg)
     ;; poll events, swap buffers
     (glfwPollEvents)
@@ -144,4 +140,4 @@
     (ppic2_visuals)
     (callback (+ (now) (convert (* 44100. delta_t))) ppic_visuals_loop delta_t)))
 
-(ppic_visuals_loop (/ 1. 30))
+(ppic_visuals_loop (/ 1. 5.))

@@ -1,0 +1,44 @@
+(sys:load "libs/core/math.xtm")
+
+;;;;;;;;;;;;;
+;; nanomsg ;;
+;;;;;;;;;;;;;
+
+;;                           0   1     2          3             4             5
+;;                           idx ntime part       qt            vxhist        vyhist
+(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|>)
+
+(bind-val NRM_TYPE_SIZE i64 -1)
+
+(bind-func set_nrm_type_size
+  (lambda (size)
+    (set! NRM_TYPE_SIZE size)))
+
+(impc:aot:do-or-emit
+ (set_nrm_type_size (impc:ir:get-type-size "NodeResponseMsg")))
+
+;; keep these up to date with the named type above
+(bind-val NRM_PARTICLE_COUNT i64 100)
+(bind-val NRM_QT_COUNT i64 100)
+(bind-val NRM_VHIST_BIN_COUNT i64 100)
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; set problem size ;;
+;;;;;;;;;;;;;;;;;;;;;;
+
+;;  need a few of these constants here - make sure they stay in sync!
+
+;; spatial grid size is 2^indx x 2^indy
+(bind-val indx i32 11)
+(bind-val indy i32 11)
+;; np{x,y} is number of particles in {x,y} direction
+(bind-val npx i32 700)
+(bind-val npy i32 700)
+;; declare scalars for standard code
+;; (bind-val j i32 0)
+(bind-val nx i32 (<< 1:i32 indx))
+(bind-val ny i32 (<< 1:i32 indy))
+(bind-val nxh i32 (/ nx 2))
+(bind-val nyh i32 (/ ny 2))
+(bind-val nxe i32 (+ nx 2))
+(bind-val nye i32 (+ ny 2))

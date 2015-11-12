@@ -32,113 +32,112 @@
 ;; this data should have interleaved the `bases' of the field arrows
 ;; (i.e. the grid) in 2D with the ndim (i.e. 3D) field components
 
-(bind-val field_arrows float*)
+;; (bind-val field_arrows float*)
 
-(bind-func ppic2_visuals_field_init
-  (lambda ()
-    (let ((field_arrows_:float* (halloc (* 4 nx ny)))
-          (idx 0))
-      (set! field_arrows field_arrows_)
-      ;; set base verts (i.e. every second vec2) to regular grid
-      (doloop (i nx)
-        (doloop (j ny)
-          (set! idx (* (+ (* i nx) j) 4))
-          (pset! field_arrows
-                 idx
-                 (/ (convert i float) (convert nx float)))
-          (pset! field_arrows
-                 (+ idx 1)
-                 (/ (convert j float) (convert ny float)))))
-      void)))
+;; (bind-func ppic2_visuals_field_init
+;;   (lambda ()
+;;     (let ((field_arrows_:float* (halloc (* 4 nx ny)))
+;;           (idx 0))
+;;       (set! field_arrows field_arrows_)
+;;       ;; set base verts (i.e. every second vec2) to regular grid
+;;       (doloop (i nx)
+;;         (doloop (j ny)
+;;           (set! idx (* (+ (* i nx) j) 4))
+;;           (pset! field_arrows
+;;                  idx
+;;                  (/ (convert i float) (convert nx float)))
+;;           (pset! field_arrows
+;;                  (+ idx 1)
+;;                  (/ (convert j float) (convert ny float)))))
+;;       void)))
 
-(ppic2_visuals_field_init)
+;; (ppic2_visuals_field_init)
 
-(bind-func ppic2_visuals_copy_field_data
-  (lambda (field:float* scale_factor:float)
-    (let ((field_arrows_idx 0)
-          (field_idx 0)
-          (max_length 0.))
-      ;; (doloop (k (* nxe ny))
-      ;;   (set! field_idx (* k ndim))
-      ;;   (if (> (pref field field_idx) max_length)
-      ;;       (set! max_length
-      ;;             (pref field field_idx)))
-      ;;   (if (> (pref field (+ field_idx 1)) max_length)
-      ;;       (set! max_length
-      ;;             (pref field (+ field_idx 1)))))
-      ;; (if (> max_length 0.25)
-      ;;     (set! scale_factor (* 0.25 (/ 1.0 max_length))))
-      (doloop (i nx)
-        (doloop (j ny)
-          (set! field_arrows_idx (* (+ (* i nx) j) 4))
-          (set! field_idx (+ (* i nxe) j 1))
-          (pset! field_arrows ;; x component
-                 (+ field_arrows_idx 2)
-                 (+ (pref field_arrows field_arrows_idx)
-                    (* scale_factor (pref field field_idx))))
-          (pset! field_arrows ;; x component
-                 (+ field_arrows_idx 3)
-                 (+ (pref field_arrows (+ field_arrows_idx 1))
-                    (* scale_factor (pref field (+ field_idx 1))))))))))
+;; (bind-func ppic2_visuals_copy_field_data
+;;   (lambda (field:float* scale_factor:float)
+;;     (let ((field_arrows_idx 0)
+;;           (field_idx 0)
+;;           (max_length 0.))
+;;       ;; (doloop (k (* nxe ny))
+;;       ;;   (set! field_idx (* k ndim))
+;;       ;;   (if (> (pref field field_idx) max_length)
+;;       ;;       (set! max_length
+;;       ;;             (pref field field_idx)))
+;;       ;;   (if (> (pref field (+ field_idx 1)) max_length)
+;;       ;;       (set! max_length
+;;       ;;             (pref field (+ field_idx 1)))))
+;;       ;; (if (> max_length 0.25)
+;;       ;;     (set! scale_factor (* 0.25 (/ 1.0 max_length))))
+;;       (doloop (i nx)
+;;         (doloop (j ny)
+;;           (set! field_arrows_idx (* (+ (* i nx) j) 4))
+;;           (set! field_idx (+ (* i nxe) j 1))
+;;           (pset! field_arrows ;; x component
+;;                  (+ field_arrows_idx 2)
+;;                  (+ (pref field_arrows field_arrows_idx)
+;;                     (* scale_factor (pref field field_idx))))
+;;           (pset! field_arrows ;; x component
+;;                  (+ field_arrows_idx 3)
+;;                  (+ (pref field_arrows (+ field_arrows_idx 1))
+;;                     (* scale_factor (pref field (+ field_idx 1))))))))))
 
-;; not sure why fxyze tends to get massive (junk) numbers in it, but
-;; this hack cleans them out.
-(bind-func ppic2_visuals_reset_arrows_buffer
-  (lambda ()
-    (let ((idx 0))
-      (doloop (i nx)
-        (doloop (j ny)
-          (set! idx (* (+ (* i ny) j) 4))
-          ;; (println "idx:" idx)
-          (if (> (fabs (pref field_arrows (+ 2 idx))) 1.0)
-              (pset! field_arrows
-                     (+ 2 idx)
-                     (pref field_arrows (+ 0 idx))))
-          (if (> (fabs (pref field_arrows (+ 3 idx))) 1.0)
-              (pset! field_arrows
-                     (+ 3 idx)
-                     (pref field_arrows (+ 1 idx)))))))))
+;; ;; not sure why fxyze tends to get massive (junk) numbers in it, but
+;; ;; this hack cleans them out.
+;; (bind-func ppic2_visuals_reset_arrows_buffer
+;;   (lambda ()
+;;     (let ((idx 0))
+;;       (doloop (i nx)
+;;         (doloop (j ny)
+;;           (set! idx (* (+ (* i ny) j) 4))
+;;           ;; (println "idx:" idx)
+;;           (if (> (fabs (pref field_arrows (+ 2 idx))) 1.0)
+;;               (pset! field_arrows
+;;                      (+ 2 idx)
+;;                      (pref field_arrows (+ 0 idx))))
+;;           (if (> (fabs (pref field_arrows (+ 3 idx))) 1.0)
+;;               (pset! field_arrows
+;;                      (+ 3 idx)
+;;                      (pref field_arrows (+ 1 idx)))))))))
 
-(bind-func ppic2_visuals_field_draw
-  (let ((bounds (Rect 0. 0. (convert width) (convert height))))
-    (lambda (idx:i32)
-      (ppic2_visuals_copy_field_data fxye .1)
-      (dv_draw_line_segments vg bounds field_arrows 1000)
-      void)))
+;; (bind-func ppic2_visuals_field_draw
+;;   (let ((bounds (Rect 0. 0. (convert width) (convert height))))
+;;     (lambda (idx:i32)
+;;       (ppic2_visuals_copy_field_data fxye .1)
+;;       (dv_draw_line_segments vg bounds field_arrows 1000)
+;;       void)))
 
 ;; magnitude spectrum
 
 (dv_draw_bars.gain 100.)
 
-(bind-func ppic2_qt_spectrum_draw
-  (let ((nbins (* nye kxp))
-        (spec:float* (zalloc nbins))
-        (bounds:Rect* (Rect (* (convert width) .5)
-                            (* (convert height) .5)
-                            (* (convert width) .5)
-                            (* (convert height) .5))))
-    (lambda (idx:i32)
-      (doloop (i nbins)
-        (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr qt i) 0)
-                                        (tref (pref-ptr qt i) 0))
-                                     (* (tref (pref-ptr qt i) 1)
-                                        (tref (pref-ptr qt i) 1)))))))
-      (dv_draw_bars vg bounds spec (convert nbins)))))
+;; (bind-func ppic2_qt_spectrum_draw
+;;   (let ((spec:float* (zalloc nbins))
+;;         (bounds:Rect* (Rect (* (convert width) .5)
+;;                             (* (convert height) .5)
+;;                             (* (convert width) .5)
+;;                             (* (convert height) .5))))
+;;     (lambda (idx:i32 nbins)
+;;       (doloop (i nbins)
+;;         (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr qt i) 0)
+;;                                         (tref (pref-ptr qt i) 0))
+;;                                      (* (tref (pref-ptr qt i) 1)
+;;                                         (tref (pref-ptr qt i) 1)))))))
+;;       (dv_draw_bars vg bounds spec (convert nbins)))))
 
-(bind-func ppic2_qe_spectrum_draw
-  (let ((nbins (/ (* nxe (pref nypmx_ptr 0)) 2))
-        (spec:float* (zalloc nbins))
-        (bounds:Rect* (Rect (* (convert width) .5)
-                            (* (convert height) .5)
-                            (* (convert width) .5)
-                            (* (convert height) .5))))
-    (lambda (idx:i32)
-      (doloop (i nbins)
-        (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr (cast qe Complexf*) i) 0)
-                                        (tref (pref-ptr (cast qe Complexf*) i) 0))
-                                     (* (tref (pref-ptr (cast qe Complexf*) i) 1)
-                                        (tref (pref-ptr (cast qe Complexf*) i) 1)))))))
-      (dv_draw_bars vg bounds spec (convert nbins)))))
+;; (bind-func ppic2_qe_spectrum_draw
+;;   (let ((nbins (/ (* nxe (pref nypmx_ptr 0)) 2))
+;;         (spec:float* (zalloc nbins))
+;;         (bounds:Rect* (Rect (* (convert width) .5)
+;;                             (* (convert height) .5)
+;;                             (* (convert width) .5)
+;;                             (* (convert height) .5))))
+;;     (lambda (idx:i32)
+;;       (doloop (i nbins)
+;;         (pset! spec i (* .3 (sqrt (+ (* (tref (pref-ptr (cast qe Complexf*) i) 0)
+;;                                         (tref (pref-ptr (cast qe Complexf*) i) 0))
+;;                                      (* (tref (pref-ptr (cast qe Complexf*) i) 1)
+;;                                         (tref (pref-ptr (cast qe Complexf*) i) 1)))))))
+;;       (dv_draw_bars vg bounds spec (convert nbins)))))
 
 ;;;;;;;;;;;;;;;
 ;; particles ;;
@@ -154,7 +153,7 @@
 @param size - point size"
   (let ((stroke_width 2.:f)
         (padding 20.)
-        (colour (NVGcolor 1. 1. 1. .2)))
+        (colour (NVGcolor 1. 1. 1. .5)))
     (lambda (vg bounds:Rect* points:float* npoints:i64 size:float)
       (if (< npoints 1)
           (begin (println "npoints must be at least 1 for scatter_points") -1)
@@ -169,8 +168,8 @@
             (dotimes (i npoints)
               (nvgBeginPath vg)
               (nvgCircle vg
-                         (+ x (* w (/ (pref points (* i (convert idimp i64))) (convert nx))))
-                         (+ y (* h (- 1. (/ (pref points (+ (* i (convert idimp i64)) 1)) (convert (pref nyp_ptr 0))))))
+                         (+ x (* w (/ (pref points (* i (convert 4 i64))) (convert nx))))
+                         (+ y (* h (- 1. (/ (pref points (+ (* i (convert 4 i64)) 1)) (convert ny)))))
                          size)
               (nvgFill vg))
             0)))))
@@ -178,7 +177,7 @@
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
     (lambda (idx:i32 size)
-      (dv_draw_scatter_points_fixed_size vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 2) 0) (/ NRM_PARTICLE_COUNT 4) size)
+      (dv_draw_scatter_points_fixed_size vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 2) 0) NRM_PARTICLE_COUNT size)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +189,7 @@
         (bounds (Rect 0. 0. (* .5 (convert width)) (convert height)))
         (tile_fill (NVGcolor .6 1. .1 .35))
         (gain 2000.))
-    (lambda (idx:i32 nx:i32 ny:i32 noff:i32)
+    (lambda (idx:i32 qe:float* nx:i32 ny:i32 noff:i32)
       (let ((x (+ (tref bounds 0) padding))
             (y (+ (tref bounds 1) padding))
             (w (- (tref bounds 2) (* 2. padding)))
@@ -246,36 +245,35 @@
         (tset! sum_hb 1 (* (tref sum_hb 1) gain))))))
 
 (bind-func ppic2_visuals_histogram_draw
-  (let ((gain .001)
-        (font_size 20.)
+  (let ((gain .00001)
+        (font_size:float 24.)
         (bounds (Rect 0. 0. 0. 0.))
         (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT))))
     (lambda (idx:i32)
-      
       ;; nvg labels
-      (nvgFontSize vg font_size)
+      (dv_draw_title.font_size font_size)
       (dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.) 2.) float))
       ;; vx histogram
+      (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
       (dv_draw_title vg bounds "vx")
       (dv_draw_axes_2D vg bounds)
       (ppic2_accum_vxhist NRM_VHIST_BIN_COUNT gain)
-      (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
       (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 4) 0) float*) NRM_VHIST_BIN_COUNT)
       ;; vx histogram
+      (tset! bounds 0 (* .75 (convert width)))
       (dv_draw_title vg bounds "vy")
       (dv_draw_axes_2D vg bounds)
       (ppic2_accum_vyhist NRM_VHIST_BIN_COUNT gain)
-      (tset! bounds 0 (* .75 (convert width)))
       (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 5) 0) float*) NRM_VHIST_BIN_COUNT)
       void)))
 
 ;; (bind-func external_field
 ;;   (lambda ()
 ;;     (doloop (i (convert np i64))
-;;       (if (and (< (pref part (+ (* i (convert idimp i64)) 1)) (+ (convert nyh) 2.))
-;;                (> (pref part (+ (* i (convert idimp i64)) 1)) (- (convert nyh) 2.))
+;;       (if (and (< (pref part (+ (* i (convert 4 i64)) 1)) (+ (convert nyh) 2.))
+;;                (> (pref part (+ (* i (convert 4 i64)) 1)) (- (convert nyh) 2.))
 ;;                (< (random) .1))
-;;           (pset! part (+ (* i (convert idimp i64)) 3) (* -1. (pref part (+ (* i (convert idimp i64)) 3))))))))
+;;           (pset! part (+ (* i (convert 4 i64)) 3) (* -1. (pref part (+ (* i (convert 4 i64)) 3))))))))
 
 ;; load indicators
 

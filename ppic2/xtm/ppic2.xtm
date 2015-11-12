@@ -35,6 +35,7 @@
 (impc:aot:insert-header "xtmppic2")
 
 (sys:load "libs/core/math.xtm")
+(sys:load "ppic2/xtm/ppic2-common.xtm")
 ;; (bind-type Complexf <float,float>) ;; the only thing we use from math.xtm
 
 ;; (sys:load "libs/contrib/mpi.xtm")
@@ -105,17 +106,6 @@
 (bind-lib libppic2 cwppfft2r [void,Complexf*,Complexf*,Complexf*,Complexf*,i32,i32,i32*,Complexf*,float*,i32,i32,i32,i32,i32,i32,i32,i32,i32,i32,i32]*)
 (bind-lib libppic2 cwppfft2r2 [void,Complexf*,Complexf*,Complexf*,Complexf*,i32,i32,i32*,Complexf*,float*,i32,i32,i32,i32,i32,i32,i32,i32,i32,i32,i32]*)
 
-;;;;;;;;;;;;;;;;;;;;;;
-;; set problem size ;;
-;;;;;;;;;;;;;;;;;;;;;;
-
-;; spatial grid size is 2^indx x 2^indy
-(bind-val indx i32 12)
-(bind-val indy i32 12)
-;; np{x,y} is number of particles in {x,y} direction
-(bind-val npx i32 1000)
-(bind-val npy i32 1000)
-
 (bind-val ndim i32 2)
 (bind-val tend float 10.0)
 (bind-val dt float 0.1)
@@ -135,12 +125,12 @@
 (bind-val wt float 0.0)
 ;; declare scalars for standard code
 ;; (bind-val j i32 0)
-(bind-val nx i32 0)
-(bind-val ny i32 0)
-(bind-val nxh i32 0)
-(bind-val nyh i32 0)
-(bind-val nxe i32 0)
-(bind-val nye i32 0)
+;; (bind-val nx i32 0)
+;; (bind-val ny i32 0)
+;; (bind-val nxh i32 0)
+;; (bind-val nyh i32 0)
+;; (bind-val nxe i32 0)
+;; (bind-val nye i32 0)
 (bind-val nxeh i32 0)
 (bind-val nnxe i32 0)
 (bind-val nxyh i32 0)
@@ -168,12 +158,12 @@
 
 (impc:aot:do-or-emit
  (call-as-xtlang
-  (set! nx (<< 1:i32 indx))
-  (set! ny (<< 1:i32 indy))
-  (set! nxh (/ nx 2))
-  (set! nyh (/ ny 2))
-  (set! nxe (+ nx 2))
-  (set! nye (+ ny 2))
+  ;; (set! nx (<< 1:i32 indx))
+  ;; (set! ny (<< 1:i32 indy))
+  ;; (set! nxh (/ nx 2))
+  ;; (set! nyh (/ ny 2))
+  ;; (set! nxe (+ nx 2))
+  ;; (set! nye (+ ny 2))
   (set! nxeh (/ nxe 2))
   (set! nnxe (* ndim nxe))
   (set! nxyh (/ (if (> nx ny) nx ny) 2))
@@ -492,28 +482,6 @@
           (println "ntime:" ntime))
       ;; (callback (+ (now) (/ 44100 5)) ppic2_loop)
       (callback (now) ppic2_loop))))
-
-;; data structure for nanomsg req/rep
-
-;; qt: (* nye kxp)
-
-;;                           0   1     2          3             4             5
-;;                           idx ntime part       qt            vxhist        vyhist
-(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|>)
-
-(bind-val NRM_TYPE_SIZE i64 -1)
-
-(bind-func set_nrm_type_size
-  (lambda (size)
-    (set! NRM_TYPE_SIZE size)))
-
-(impc:aot:do-or-emit
- (set_nrm_type_size (impc:ir:get-type-size "NodeResponseMsg")))
-
-;; keep these up to date with the named type above
-(bind-val NRM_PARTICLE_COUNT i64 100)
-(bind-val NRM_QT_COUNT i64 100)
-(bind-val NRM_VHIST_BIN_COUNT i64 100)
 
 (set! *impc:compiler:message:level* 'high)
 
