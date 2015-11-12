@@ -113,8 +113,8 @@
 (bind-val indx i32 12)
 (bind-val indy i32 12)
 ;; np{x,y} is number of particles in {x,y} direction
-(bind-val npx i32 100)
-(bind-val npy i32 100)
+(bind-val npx i32 1000)
+(bind-val npy i32 1000)
 
 (bind-val ndim i32 2)
 (bind-val tend float 10.0)
