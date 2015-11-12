@@ -140,4 +140,4 @@
     (ppic2_visuals)
     (callback (+ (now) (convert (* 44100. delta_t))) ppic_visuals_loop delta_t)))
 
-(ppic_visuals_loop (/ 1. 5.))
+(ppic_visuals_loop (/ 1. 20.))
