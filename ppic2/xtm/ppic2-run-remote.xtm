@@ -1,0 +1,125 @@
+;;; ppic2.xtm:examples -- example of the pic code in use
+
+;; Author: Ben Swift
+;; Keywords: extempore
+;; Required dylibs: libcpic2.dylib
+
+;;; Commentary:
+
+;; to run this with MPI, you'll need an appfile (e.g. ppic2.app), which will look
+;; something like:
+
+;; -np 1 extempore --port 7099 --run path/to/ppic2.xtm
+;; -np 1 extempore --port 7097 --run path/to/ppic2.xtm
+;; ... (depending on how many processes you want to run)
+
+;; then, run extempore with mpi run:
+
+;; > mpirun --app ppic2.app
+
+;;; Code:
+
+;; need to set up the size of our problem
+
+;; now load the libraries - assumes we're running in the skeleton-pic directory
+(sys:load "ppic2/xtm/ppic2.xtm")
+(sys:load "libs/external/nanomsg.xtm")
+
+(bind-val REMOTE_PORT i32 9000)
+(bind-val REMOTE_SOCKET i32 -1)
+
+(bind-func remote_create_socket
+  (lambda ()
+    (let ((address_start "tcp://*:")
+          (address:i8* (zalloc 100)))
+      (if (< REMOTE_SOCKET 0)
+          (set! REMOTE_SOCKET (nnsock_create NN_REP)))
+      (sprintf address address_start)
+      (sprintf (pref-ptr address (strlen address)) "%d" REMOTE_PORT)
+      (nn_bind REMOTE_SOCKET address))))
+
+(remote_create_socket)
+
+;; some extra histograms
+
+(bind-func histogram_float_full_ampdc
+  (lambda (hist:HistBin* buf:float* buflen lower upper nbins amp dc)
+    (let ((current_bin:HistBin* null)
+          (range (- upper lower))
+          (i 0))
+      (if (not (> range 0.))
+          (begin
+            (println "Error in histogram: range (- upper lower) must be greater than 0.0")
+            null)
+          (begin
+            ;; setup the bins
+            (doloop (i nbins)
+              (tset! (pref-ptr hist i)
+                     0
+                     (+ lower (* (convert i) (/ range (convert nbins)))))
+              (tset! (pref-ptr hist i) 1 0.))
+            (doloop (i buflen)
+              (set! current_bin
+                    ;; use "mod nbins" to make sure it always goes
+                    ;; into a valid slot in memory
+                    (pref-ptr hist (% (convert (* (convert nbins float) (/ (- (pref buf (+ (* i amp) dc)) lower) range)) i64) nbins)))
+              (tset! current_bin 1 (+ (tref current_bin 1) 1.0)))
+            hist)))))
+
+(bind-func histogram_float_range_ampdc
+  "like the full version, but use the min and max values in the buffer as upper and lower"
+  (lambda (hist:HistBin* buf:float* buflen nbins amp dc)
+    (let ((lower 0.0)
+          (upper 0.0))
+      ;; find max/min values
+      (doloop (i buflen)
+        (if (< (pref buf i) lower)
+            (set! lower (pref buf i)))
+        (if (> (pref buf i) upper)
+            (set! upper (pref buf i))))
+      (histogram_float_full_ampdc hist buf buflen lower upper nbins amp dc))))
+
+(bind-poly histogram histogram_float_full_ampdc)
+(bind-poly histogram histogram_float_range_ampdc)
+
+(bind-func remote_response_handler
+  (let ((nrm:NodeResponseMsg* (zalloc)))
+    (lambda (buf:i8* buflen:i64)
+      (tset! nrm 0 (- kstrt 1))
+      (tset! nrm 1 ntime)
+      (let ((part_arr (tref-ptr nrm 2))
+            (qt_arr (tref-ptr nrm 3))
+            (vxhist_arr (tref-ptr nrm 4))
+            (vyhist_arr (tref-ptr nrm 5))
+            (i 0))
+        (dotimes (i (* 4 NRM_PARTICLE_COUNT))
+          (aset! part_arr i (pref part i)))
+        (dotimes (i NRM_QT_COUNT)
+          (aset! qt_arr i (pref qt i)))
+        ;; (histogram_float_range_ampdc (aref-ptr (tref-ptr nrm 4) 0) part (convert (pref npp_ptr 0)) NRM_VHIST_BIN_COUNT 4 2)
+        ;; (histogram_float_range_ampdc (aref-ptr (tref-ptr nrm 5) 0) part (convert (pref npp_ptr 0)) NRM_VHIST_BIN_COUNT 4 3)
+        void)
+      (nn_send REMOTE_SOCKET (cast nrm i8*) NRM_TYPE_SIZE 0)
+      void)))
+
+(bind-func remote_nonblocking_read_loop
+  (let ((buf:i8* (zalloc NRM_TYPE_SIZE))
+        (continue #t))
+    (lambda ()
+      (if (< REMOTE_SOCKET 0)
+          (nn_println_strerror)
+          (let ((nbytes (nn_recv REMOTE_SOCKET buf NRM_TYPE_SIZE NN_DONTWAIT)))
+            ;; if we get some bytes, trigger the callback
+            (if (> nbytes 0)
+                (remote_response_handler buf (convert nbytes))
+                void)))
+      (if continue
+          (callback (+ (now) 500) remote_nonblocking_read_loop)
+          (begin
+            (println "stopping nonblocking_read_loop")
+            0)))))
+
+(remote_nonblocking_read_loop)
+
+;; start the loop running
+(ppic2_loop)

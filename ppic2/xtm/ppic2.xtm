@@ -485,16 +485,11 @@
 ;;       1)
 ;;     (ppic2_print_energies)))
 
-(bind-func ppic2_visuals
-  (lambda ()
-    void))
-
 (bind-func ppic2_loop
   (lambda ()
     (let ((ntime (ppic2_step)))
       (if (= (% ntime 1000) 0)
           (println "ntime:" ntime))
-      (ppic2_visuals)
       ;; (callback (+ (now) (/ 44100 5)) ppic2_loop)
       (callback (now) ppic2_loop))))
 
@@ -502,14 +497,23 @@
 
 ;; qt: (* nye kxp)
 
-;;                           0   1     2          3           4             5
-;;                           idx ntime part       qt          vxhist        vyhist
-(bind-type NodeResponseData <i32,i32,|100,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|>)
+;;                           0   1     2          3             4             5
+;;                           idx ntime part       qt            vxhist        vyhist
+(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|>)
 
-;; (println (impc:ir:get-type-size "NodeResponseData")) ;; to find RESPONSE_MSG_SIZE
-(bind-val RESPONSE_MSG_SIZE i64 2808)
-(bind-val RESPONSE_PARTICLE_COUNT i64 100) ;; keep this up to date with the above named type
-(bind-val RESPONSE_VHIST_BIN_COUNT i64 100) ;; keep this up to date with the above named type
+(bind-val NRM_TYPE_SIZE i64 -1)
+
+(bind-func set_nrm_type_size
+  (lambda (size)
+    (set! NRM_TYPE_SIZE size)))
+
+(impc:aot:do-or-emit
+ (set_nrm_type_size (impc:ir:get-type-size "NodeResponseMsg")))
+
+;; keep these up to date with the named type above
+(bind-val NRM_PARTICLE_COUNT i64 100)
+(bind-val NRM_QT_COUNT i64 100)
+(bind-val NRM_VHIST_BIN_COUNT i64 100)
 
 (set! *impc:compiler:message:level* 'high)
 

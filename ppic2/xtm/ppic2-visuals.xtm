@@ -178,7 +178,7 @@
 (bind-func ppic2_visuals_particles_draw
   (let ((bounds (Rect 0. 0. (* .5 (convert width)) (convert height))))
     (lambda (idx:i32 size)
-      (dv_draw_scatter_points_fixed_size vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 2) 0) RESPONSE_PARTICLE_COUNT size)
+      (dv_draw_scatter_points_fixed_size vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 2) 0) (/ NRM_PARTICLE_COUNT 4) size)
       void)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -215,46 +215,6 @@
 ;; this version takes extra arguments to do with the stride required
 ;; for the part data buffer
 
-(bind-func histogram_float_full_ampdc
-  (lambda (hist:HistBin* buf:float* buflen lower upper nbins amp dc)
-    (let ((current_bin:HistBin* null)
-          (range (- upper lower))
-          (i 0))
-      (if (not (> range 0.))
-          (begin
-            (println "Error in histogram: range (- upper lower) must be greater than 0.0")
-            null)
-          (begin
-            ;; setup the bins
-            (doloop (i nbins)
-              (tset! (pref-ptr hist i)
-                     0
-                     (+ lower (* (convert i) (/ range (convert nbins)))))
-              (tset! (pref-ptr hist i) 1 0.))
-            (doloop (i buflen)
-              (set! current_bin
-                    ;; use "mod nbins" to make sure it always goes
-                    ;; into a valid slot in memory
-                    (pref-ptr hist (% (convert (* (convert nbins float) (/ (- (pref buf (+ (* i amp) dc)) lower) range)) i64) nbins)))
-              (tset! current_bin 1 (+ (tref current_bin 1) 1.0)))
-            hist)))))
-
-(bind-func histogram_float_range_ampdc
-  "like the full version, but use the min and max values in the buffer as upper and lower"
-  (lambda (hist:HistBin* buf:float* buflen nbins amp dc)
-    (let ((lower 0.0)
-          (upper 0.0))
-      ;; find max/min values
-      (doloop (i buflen)
-        (if (< (pref buf i) lower)
-            (set! lower (pref buf i)))
-        (if (> (pref buf i) upper)
-            (set! upper (pref buf i))))
-      (histogram_float_full_ampdc hist buf buflen lower upper nbins amp dc))))
-
-(bind-poly histogram histogram_float_full_ampdc)
-(bind-poly histogram histogram_float_range_ampdc)
-
 ;; now for the actual histogram visuals
 
 (bind-func dv_draw_histogram
@@ -277,13 +237,13 @@
 (bind-func ppic2_visuals_histogram_draw
   (let ((bounds (Rect 0. 0. 0. 0.))
         (hist_height:float (/ (convert height) (convert (* REMOTE_LOCATIONS REMOTE_NODES_PER_LOCATION)))))
-    (lambda (idx)
+    (lambda (idx:i32)
       ;; vx histogram
       (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
-      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 4) 0) RESPONSE_VHIST_BIN_COUNT "vx")
+      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 4) 0) NRM_VHIST_BIN_COUNT "vx")
       ;; vy histogram
       (tset! bounds 0 (* .75 (convert width)))
-      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr RESPONSE_DATA_ARRAY idx) 5) 0) RESPONSE_VHIST_BIN_COUNT "vy"))))
+      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 5) 0) NRM_VHIST_BIN_COUNT "vy"))))
 
 ;; (bind-func external_field
 ;;   (lambda ()
