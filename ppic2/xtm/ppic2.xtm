@@ -110,8 +110,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;
 
 ;; spatial grid size is 2^indx x 2^indy
-(bind-val indx i32 7)
-(bind-val indy i32 7)
+(bind-val indx i32 9)
+(bind-val indy i32 9)
 ;; np{x,y} is number of particles in {x,y} direction
 (bind-val npx i32 100)
 (bind-val npy i32 100)
