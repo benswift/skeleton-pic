@@ -1,2 +1,2 @@
--np 1 extempore --port 7099 --run ppic2/xtm/ppic2-run-remote.xtm
--np 1 extempore --port 7097 --run ppic2/xtm/ppic2-run-remote.xtm
+-np 1 ./ppic2/xtm/extempore-7099.sh
+-np 1 ./ppic2/xtm/extempore-7097.sh

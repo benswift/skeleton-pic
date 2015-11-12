@@ -25,7 +25,8 @@
 (sys:load "ppic2/xtm/ppic2.xtm")
 (sys:load "libs/external/nanomsg.xtm")
 
-(bind-val REMOTE_PORT i32 9000)
+(if (not (impc:ti:globalvar-exists? "REMOTE_PORT"))
+    (bind-val REMOTE_PORT i32 9000))
 (bind-val REMOTE_SOCKET i32 -1)
 
 (bind-func remote_create_socket
@@ -96,8 +97,8 @@
           (aset! part_arr i (pref part i)))
         (dotimes (i NRM_QT_COUNT)
           (aset! qt_arr i (pref qt i)))
-        ;; (histogram_float_range_ampdc (aref-ptr (tref-ptr nrm 4) 0) part (convert (pref npp_ptr 0)) NRM_VHIST_BIN_COUNT 4 2)
-        ;; (histogram_float_range_ampdc (aref-ptr (tref-ptr nrm 5) 0) part (convert (pref npp_ptr 0)) NRM_VHIST_BIN_COUNT 4 3)
+        (histogram (aref-ptr (tref-ptr nrm 4) 0) part (convert (pref npp_ptr 0)) -5. 5. NRM_VHIST_BIN_COUNT 4 2)
+        (histogram (aref-ptr (tref-ptr nrm 5) 0) part (convert (pref npp_ptr 0)) -5. 5. NRM_VHIST_BIN_COUNT 4 3)
         void)
       (nn_send REMOTE_SOCKET (cast nrm i8*) NRM_TYPE_SIZE 0)
       void)))
