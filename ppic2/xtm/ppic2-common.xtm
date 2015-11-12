@@ -29,11 +29,22 @@
 ;;  need a few of these constants here - make sure they stay in sync!
 
 ;; spatial grid size is 2^indx x 2^indy
-(bind-val indx i32 11)
-(bind-val indy i32 11)
 ;; np{x,y} is number of particles in {x,y} direction
-(bind-val npx i32 700)
-(bind-val npy i32 700)
+
+;; local testing
+
+;; (bind-val indx i32 7)
+;; (bind-val indy i32 7)
+;; (bind-val npx i32 100)
+;; (bind-val npy i32 100)
+
+;; canberra infinicortex
+
+(bind-val indx i32 12)
+(bind-val indy i32 12)
+(bind-val npx i32 600)
+(bind-val npy i32 600)
+
 ;; declare scalars for standard code
 ;; (bind-val j i32 0)
 (bind-val nx i32 (<< 1:i32 indx))
