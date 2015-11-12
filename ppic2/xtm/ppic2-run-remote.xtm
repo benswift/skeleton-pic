@@ -107,7 +107,7 @@
         (histogram (aref-ptr (tref-ptr nrm 4) 0) part (convert (pref npp_ptr 0)) (* -1. hist_range) hist_range NRM_VHIST_BIN_COUNT 4 2)
         (histogram (aref-ptr (tref-ptr nrm 5) 0) part (convert (pref npp_ptr 0)) (* -1. hist_range) hist_range NRM_VHIST_BIN_COUNT 4 3)
         void)
-      (nn_send REMOTE_SOCKET (cast nrm i8*) NRM_TYPE_SIZE 0)
+      (nn_send REMOTE_SOCKET (cast nrm i8*) NRM_TYPE_SIZE NN_DONTWAIT)
       void)))
 
 (bind-func remote_nonblocking_read_loop
