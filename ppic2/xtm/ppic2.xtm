@@ -367,7 +367,7 @@
   (if (<> (pref ierr_ptr 0) 0)
       (begin
         (if (= kstrt 1)
-            (printf "particle initialization error: ierr=%d\n" (pref ierr_ptr 0)))
+            (printf "particle initialization error (%d) - perhaps your grid size (indy) is too small?\n" (pref ierr_ptr 0)))
         (cppexit))))
  1)
 
