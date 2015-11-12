@@ -23,7 +23,9 @@
 
 ;; now load the libraries - assumes we're running in the skeleton-pic directory
 (sys:load "ppic2/xtm/ppic2.xtm")
+(set! *impc:compiler:message:level* 'low)
 (sys:load "libs/external/nanomsg.xtm")
+(set! *impc:compiler:message:level* 'high)
 
 (if (not (impc:ti:globalvar-exists? "REMOTE_PORT"))
     (bind-val REMOTE_PORT i32 9000))
