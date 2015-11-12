@@ -90,8 +90,14 @@
 (bind-func remote_response_handler
   (let ((nrm:NodeResponseMsg* (zalloc)))
     (lambda (buf:i8* buflen:i64)
+      ;; stuff in the constants
       (tset! nrm 0 (- kstrt 1))
       (tset! nrm 1 ntime)
+      (tset! nrm 6 (pref npp_ptr 0))
+      (tset! nrm 7 (pref noff_ptr 0))
+      (tset! nrm 8 (pref nyp_ptr 0))
+      (tset! nrm 9 (pref nypmx_ptr 0))
+      ;; fill the arrays
       (let ((hist_range 100.)
             (part_arr (tref-ptr nrm 2))
             (part_stride 20)
