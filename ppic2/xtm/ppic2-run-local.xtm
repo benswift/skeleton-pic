@@ -104,7 +104,7 @@
 
 ;; create & connect sockets
 (local_create_sockets
- (call-as-xtlang (* REMOTE_LOCATIONS REMOTE_NODES_PER_LOCATION)))
+ (call-as-xtlang (* REMOTE_LOCATION_COUNT REMOTE_NODES_PER_LOCATION)))
 
 (local_connect_sockets
  (call-as-xtlang LOCAL_START_PORT))
