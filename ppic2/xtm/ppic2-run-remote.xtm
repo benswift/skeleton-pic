@@ -34,7 +34,7 @@
     (let ((address_start "tcp://*:")
           (address:i8* (zalloc 100)))
       (if (< REMOTE_SOCKET 0)
-          (set! REMOTE_SOCKET (nnsock_create NN_REP)))
+          (set! REMOTE_SOCKET (nnsock_create NN_PAIR)))
       (sprintf address address_start)
       (sprintf (pref-ptr address (strlen address)) "%d" REMOTE_PORT)
       (nn_bind REMOTE_SOCKET address))))

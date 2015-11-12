@@ -39,7 +39,7 @@
 (bind-func local_create_sockets
   (lambda (nsock:i32)
     (doloop (i nsock)
-      (aset! LOCAL_SOCKET_ARRAY i (nnsock_create NN_REQ)))
+      (aset! LOCAL_SOCKET_ARRAY i (nnsock_create NN_PAIR)))
     (set! LOCAL_SOCKET_ARRAY_SIZE nsock)))
 
 (bind-func local_connect_sockets
