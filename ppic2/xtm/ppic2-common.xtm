@@ -4,9 +4,9 @@
 ;; nanomsg ;;
 ;;;;;;;;;;;;;
 
-;;                           0   1     2          3             4             5            6   7
-;;                           idx ntime part       qt            vxhist        vyhist       npp noff
-(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|>)
+;;                           0   1     2          3             4             5            6   7    8   9
+;;                           idx ntime part       qt            vxhist        vyhist       npp noff nyp nypmx
+(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|,i32,i32,i32,i32>)
 
 (bind-val NRM_TYPE_SIZE i64 -1)
 
