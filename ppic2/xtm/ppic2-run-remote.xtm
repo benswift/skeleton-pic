@@ -37,7 +37,9 @@
           (set! REMOTE_SOCKET (nnsock_create NN_PAIR)))
       (sprintf address address_start)
       (sprintf (pref-ptr address (strlen address)) "%d" REMOTE_PORT)
-      (nn_bind REMOTE_SOCKET address))))
+      (printf "attempting to bind nanomsg socket on %s\n" address)
+      (if (< (nn_bind REMOTE_SOCKET address) 0)
+          (nn_println_strerror "error in remote_create_socket")))))
 
 (remote_create_socket)
 
