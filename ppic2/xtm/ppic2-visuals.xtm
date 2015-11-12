@@ -217,33 +217,57 @@
 
 ;; now for the actual histogram visuals
 
-(bind-func dv_draw_histogram
-  (let ((gain .001)
-        (font_size 20.))
-    (lambda (vg bounds:Rect* hist:HistBin* histlen title)
-      ;; apply some x/y scaling (in-place)
-      (doloop (i histlen)
-        (tset! (pref-ptr hist i) 0 (/ (convert i float) (convert histlen float)))
-        (tset! (pref-ptr hist i) 1 (* (tref (pref-ptr hist i) 1) gain)))
-      ;; nvg labels
-      (nvgFontSize vg font_size)
-      ;; vx histogram
-      (dv_draw_title vg bounds title)
-      (dv_draw_axes_2D vg bounds)
-      (dv_draw_line.stroke_width (convert (+ (* (cos (* .01 (convert ntime))) 2.) 3.) float))
-      (dv_draw_line vg bounds (cast hist float*) histlen)
-      void)))
+(bind-func ppic2_accum_vxhist
+  (lambda (histlen gain)
+    (let ((i 0)
+          (j 0)
+          (sum_hb:HistBin* null))
+      (dotimes (i histlen)
+        ;; set up the x-axis (modifies data inplace)
+        (set! sum_hb (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 4) i))
+        (tset! sum_hb 0 (/ (convert i float) (convert histlen float)))
+        (dotimes (j (convert LOCAL_SOCKET_ARRAY_SIZE i64))
+          ;; accumulate the hist data into the lowest HistBin array
+          (tset! sum_hb 1 (+ (tref sum_hb 1) (tref (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY j) 4) i) 1))))
+        (tset! sum_hb 1 (* (tref sum_hb 1) gain))))))
+
+(bind-func ppic2_accum_vyhist
+  (lambda (histlen gain)
+    (let ((i 0)
+          (j 0)
+          (sum_hb:HistBin* null))
+      (dotimes (i histlen)
+        ;; set up the x-axis (modifies data inplace)
+        (set! sum_hb (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 5) i))
+        (tset! sum_hb 0 (/ (convert i float) (convert histlen float)))
+        (dotimes (j (convert LOCAL_SOCKET_ARRAY_SIZE i64))
+          ;; accumulate the hist data into the lowest HistBin array
+          (tset! sum_hb 1 (+ (tref sum_hb 1) (tref (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY j) 5) i) 1))))
+        (tset! sum_hb 1 (* (tref sum_hb 1) gain))))))
 
 (bind-func ppic2_visuals_histogram_draw
-  (let ((bounds (Rect 0. 0. 0. 0.))
-        (hist_height:float (/ (convert height) (convert (* REMOTE_LOCATIONS REMOTE_NODES_PER_LOCATION)))))
+  (let ((gain .001)
+        (font_size 20.)
+        (bounds (Rect 0. 0. 0. 0.))
+        (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT))))
     (lambda (idx:i32)
+      
+      ;; nvg labels
+      (nvgFontSize vg font_size)
+      (dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.) 2.) float))
       ;; vx histogram
+      (dv_draw_title vg bounds "vx")
+      (dv_draw_axes_2D vg bounds)
+      (ppic2_accum_vxhist NRM_VHIST_BIN_COUNT gain)
       (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
-      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 4) 0) NRM_VHIST_BIN_COUNT "vx")
-      ;; vy histogram
+      (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 4) 0) float*) NRM_VHIST_BIN_COUNT)
+      ;; vx histogram
+      (dv_draw_title vg bounds "vy")
+      (dv_draw_axes_2D vg bounds)
+      (ppic2_accum_vyhist NRM_VHIST_BIN_COUNT gain)
       (tset! bounds 0 (* .75 (convert width)))
-      (dv_draw_histogram vg bounds (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY idx) 5) 0) NRM_VHIST_BIN_COUNT "vy"))))
+      (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 5) 0) float*) NRM_VHIST_BIN_COUNT)
+      void)))
 
 ;; (bind-func external_field
 ;;   (lambda ()
