@@ -33,15 +33,14 @@
 
 (bind-func remote_create_socket
   (lambda ()
-    (let ((address_start "tcp://0.0.0.0:")
+    (let ((address_start "tcp://*:")
           (address:i8* (zalloc 100)))
       (if (< REMOTE_SOCKET 0)
           (set! REMOTE_SOCKET (nnsock_create NN_PAIR)))
       (sprintf address address_start)
       (sprintf (pref-ptr address (strlen address)) "%d" REMOTE_PORT)
-      (printf "attempting to bind nanomsg socket on %s\n" address)
-      (if (< (nn_bind REMOTE_SOCKET address) 0)
-          (nn_println_strerror "error in remote_create_socket")))))
+      (printf "binding nanomsg lintener socket on %s\n" address)
+      (nn_bind REMOTE_SOCKET address))))
 
 (remote_create_socket)
 
