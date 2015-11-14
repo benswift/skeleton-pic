@@ -134,7 +134,8 @@
             (println "stopping nonblocking_read_loop")
             0)))))
 
-(remote_nonblocking_read_loop)
-
 ;; start the loop running
 (ppic2_loop)
+
+(remote_nonblocking_read_loop)
+
