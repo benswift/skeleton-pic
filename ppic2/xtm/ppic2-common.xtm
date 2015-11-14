@@ -6,7 +6,11 @@
 
 ;;                           0   1     2          3             4             5            6   7    8   9
 ;;                           idx ntime part       qt            vxhist        vyhist       npp noff nyp nypmx
-(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,Complexf|,|100,HistBin|,|100,HistBin|,i32,i32,i32,i32>)
+(bind-type NodeResponseMsg <i32,i32,|400,float|,|100,float|,|100,HistBin|,|100,HistBin|,i32,i32,i32,i32>)
+;; keep these up to date with the named type above
+(bind-val NRM_PARTICLE_COUNT i64 100)
+(bind-val NRM_QE_COUNT i64 100)
+(bind-val NRM_VHIST_BIN_COUNT i64 100)
 
 (bind-val NRM_TYPE_SIZE i64 -1)
 
@@ -17,10 +21,6 @@
 (impc:aot:do-or-emit
  (set_nrm_type_size (impc:ir:get-type-size "NodeResponseMsg")))
 
-;; keep these up to date with the named type above
-(bind-val NRM_PARTICLE_COUNT i64 100)
-(bind-val NRM_QE_COUNT i64 100)
-(bind-val NRM_VHIST_BIN_COUNT i64 100)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; set problem size ;;
