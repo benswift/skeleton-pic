@@ -19,7 +19,7 @@
 
 ;; keep these up to date with the named type above
 (bind-val NRM_PARTICLE_COUNT i64 100)
-(bind-val NRM_QT_COUNT i64 100)
+(bind-val NRM_QE_COUNT i64 100)
 (bind-val NRM_VHIST_BIN_COUNT i64 100)
 
 ;;;;;;;;;;;;;;;;;;;;;;
