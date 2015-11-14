@@ -151,7 +151,7 @@
 @param points - pointer to point data (packed) e.g. x1,y1,x2,y2,...
 @param npoints - number of points
 @param size - point size"
-  (let ((stroke_width 2.:f)
+  (let ((stroke_width 4.:f)
         (padding 20.)
         (colour (NVGcolor 1. 1. 1. .5)))
     (lambda (vg bounds:Rect* points:float* npoints:i64 size:float)
@@ -162,16 +162,17 @@
                 (w (- (tref bounds 2) (* 2. padding)))
                 (h (- (tref bounds 3) (* 2. padding)))
                 (i 0))
-            ;; (nvgFillWidth vg stroke_width)
-            (_nvgFillColor vg colour)
+            (nvgStrokeWidth vg stroke_width)
+            (_nvgStrokeColor vg colour)
             ;; add circles to path
             (dotimes (i npoints)
               (nvgBeginPath vg)
-              (nvgCircle vg
-                         (+ x (* w (/ (pref points (* i (convert 4 i64))) (convert nx))))
-                         (+ y (* h (- 1. (/ (pref points (+ (* i (convert 4 i64)) 1)) (convert ny)))))
-                         size)
-              (nvgFill vg))
+              (nvgEllipse vg
+                          (+ x (* w (/ (pref points (* i (convert 4 i64))) (convert nx))))
+                          (+ y (* h (- 1. (/ (pref points (+ (* i (convert 4 i64)) 1)) (convert ny)))))
+                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .00001))) size)
+                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .00004))) size))
+              (nvgStroke vg))
             0)))))
 
 (bind-func ppic2_visuals_particles_draw
@@ -187,7 +188,7 @@
 (bind-func ppic2_visuals_charge_density_draw
   (let ((padding 20.)
         (bounds (Rect 0. 0. (* .5 (convert width)) (convert height)))
-        (tile_fill (NVGcolor .6 1. .1 .35))
+        (tile_fill (NVGcolor .6 1. .1 .3))
         (gain 5000.))
     (lambda (idx:i32)
       (let ((x (+ (tref bounds 0) padding))
@@ -202,7 +203,7 @@
           (set! nyp (tref (aref-ptr NRM_ARRAY i) 8))
           (dotimes (col (min (/ (convert NRM_QE_COUNT i32) nyp) nx))
             (dotimes (row ny)
-              (tset! tile_fill 3 (+ .5 (* gain .1 (pref qe (+ (* col nxe) row)))))
+              (tset! tile_fill 1 (+ .5 (* gain .1 (pref qe (+ (* col nxe) row)))))
               (tset! tile_fill 2 (+ .5 (* gain -.1 (pref qe (+ (* col nxe) row)))))
               (_nvgFillColor vg tile_fill)
               (nvgBeginPath vg)

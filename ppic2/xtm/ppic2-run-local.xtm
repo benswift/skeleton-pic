@@ -128,7 +128,7 @@
     (let ((i:i32 0))
       (dotimes (i LOCAL_SOCKET_ARRAY_SIZE)
         (ppic2_visuals_charge_density_draw i)
-        (ppic2_visuals_particles_draw i 3.)
+        (ppic2_visuals_particles_draw i 5.)
         ;; (ppic2_qt_spectrum_draw i)
         ;; (ppic2_visuals_field_draw i)
         (ppic2_visuals_histogram_draw i)
