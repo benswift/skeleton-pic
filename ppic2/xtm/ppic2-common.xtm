@@ -5,7 +5,7 @@
 ;;;;;;;;;;;;;
 
 ;;                           0   1     2          3             4             5            6   7    8   9
-;;                           idx ntime part       qt            vxhist        vyhist       npp noff nyp nypmx
+;;                           idx ntime part       qe            vxhist        vyhist       npp noff nyp nypmx
 (bind-type NodeResponseMsg <i32,i32,|400,float|,|100,float|,|100,HistBin|,|100,HistBin|,i32,i32,i32,i32>)
 ;; keep these up to date with the named type above
 (bind-val NRM_PARTICLE_COUNT i64 100)
