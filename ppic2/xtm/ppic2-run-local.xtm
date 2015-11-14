@@ -25,7 +25,8 @@
 ;; (sys:load "ppic2/xtm/ppic2.xtm")
 (sys:load "libs/core/math.xtm")
 (sys:load "libs/external/nanomsg.xtm")
-(sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-common.xtm")
+(or (sys:load "ppic2/xtm/ppic2-common.xtm" 'quiet)
+    (sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-common.xtm"))
 
 (bind-val LOCAL_SOCKET_ARRAY |64,i32|)
 (bind-val LOCAL_SOCKET_ARRAY_SIZE i32 64)
@@ -33,10 +34,11 @@
 (bind-val LOCAL_START_PORT i32 9000)
 
 (bind-val REMOTE_LOCATION_COUNT i64 1)
-(bind-val REMOTE_NODES_PER_LOCATION i64 32)
+(bind-val REMOTE_NODES_PER_LOCATION i64 1)
 (bind-val NRM_ARRAY |32,NodeResponseMsg|) ;; size should be at least LOCAL_SOCKET_ARRAY_SIZE
 
-(sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-visuals.xtm")
+(or (sys:load "ppic2/xtm/ppic2-visuals.xtm" 'quiet)
+    (sys:load "/Users/ben/Code/src/skeleton-pic/ppic2/xtm/ppic2-visuals.xtm"))
 
 (bind-func local_create_sockets
   (lambda (nsock:i32)
