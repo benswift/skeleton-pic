@@ -255,8 +255,8 @@
         (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT))))
     (lambda (idx:i32)
       ;; nvg labels
-      (dv_draw_title.font_size font_size)
-      (dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.) 2.) float))
+      ;;(dv_draw_title.font_size font_size)
+      ;(dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.) 2.) float))
       ;; vx histogram
       (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
       (dv_draw_title vg bounds "vx")
