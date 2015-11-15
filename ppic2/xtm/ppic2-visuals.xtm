@@ -170,8 +170,8 @@
               (nvgEllipse vg
                           (+ x (* w (/ (pref points (* i (convert 4 i64))) (convert nx))))
                           (+ y (* h (- 1. (/ (pref points (+ (* i (convert 4 i64)) 1)) (convert ny)))))
-                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .00001))) size)
-                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .00004))) size))
+                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .000005))) size)
+                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .000002))) size))
               (nvgStroke vg))
             0)))))
 
