@@ -65,8 +65,7 @@
   (lambda (node_index:i32 buf:i8* buflen:i64)
     (if (<> buflen NRM_TYPE_SIZE)
         (println "msg doesn't seem to be a NodeResponseMsg, dropping..." buflen))
-    (let ((dest_ptr (cast (aref-ptr NRM_ARRAY node_index) i8*))
-          (i 0))
+    (let ((dest_ptr (cast (aref-ptr NRM_ARRAY node_index) i8*)))
       (memcpy dest_ptr buf buflen))
     void))
 
@@ -82,8 +81,7 @@
         (let ((sock (aref LOCAL_SOCKET_ARRAY i)))
           (if (< sock 0)
               (nn_println_strerror)
-              (let ((nrcvbytes (nn_recv sock rcvbuf rcvbuflen NN_DONTWAIT))
-                    (nsndbytes (nn_send sock sndbuf sndbuflen NN_DONTWAIT)))
+              (let ((nrcvbytes (nn_recv sock rcvbuf rcvbuflen NN_DONTWAIT)))
                 ;; if we get some bytes, trigger the callback
                 (if (> nrcvbytes 0)
                     (local_response_handler i rcvbuf rcvbuflen))))))
@@ -134,6 +132,7 @@
         ;; (ppic2_qt_spectrum_draw i)
         ;; (ppic2_visuals_field_draw i)
         (ppic2_visuals_histogram_draw i)
+        void
         void))
     (nvgEndFrame vg)
     ;; poll events, swap buffers
