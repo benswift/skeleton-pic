@@ -10,9 +10,6 @@
 
 ;;; Code:
 
-(if (not (defined? '*skeleton-pic-path*))
-    (eval '(define *skeleton-pic-path* "/Users/ben/Code/src/skeleton-pic/")
-          (interaction-environment)))
-
-(sys:load (string-append *skeleton-pic-path* "pic2/xtm/pic2.xtm"))
+(or (sys:load "pic2/xtm/pic2.xtm"' quiet)
+    (sys:load "/Users/ben/Code/src/skeleton-pic/pic2/xtm/pic2.xtm"' quiet))
 (pic2_loop)
