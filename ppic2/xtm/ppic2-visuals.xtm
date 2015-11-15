@@ -201,6 +201,9 @@
           (set! qe (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY i) 3) 0))
           (set! noff (tref (aref-ptr NRM_ARRAY i) 7))
           (set! nyp (tref (aref-ptr NRM_ARRAY i) 8))
+          ;; for some reason this is occasionally 0
+          (if (= nyp 0)
+              (set! nyp nx))
           (dotimes (col (min (/ (convert NRM_QE_COUNT i32) nyp) nx))
             (dotimes (row ny)
               (tset! tile_fill 1 (+ .5 (* gain .1 (pref qe (+ (* col nxe) row)))))
