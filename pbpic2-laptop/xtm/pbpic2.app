@@ -1,0 +1,2 @@
+-np 1 extempore --port 7099 --run pbpic2-laptop/xtm/pbpic2-run.xtm
+-np 1 extempore --port 7097 --run pbpic2-laptop/xtm/pbpic2-run.xtm

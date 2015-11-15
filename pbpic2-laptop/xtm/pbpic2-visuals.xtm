@@ -1,0 +1,170 @@
+(sys:load "libs/external/glfw3.xtm")
+
+(bind-val width i32 800)
+(bind-val height i32 600)
+
+(bind-val window GLFWwindow*
+  (glfw_init_and_create_interaction_window width height))
+
+(sys:load "libs/external/gl/gl-objects.xtm")
+
+;; OpenGL setup
+
+(call-as-xtlang
+ (glDisable GL_DEPTH_TEST)
+ (glDepthMask GL_FALSE)
+ (glEnable GL_BLEND)
+ (glBlendFunc GL_SRC_ALPHA GL_ONE)
+ (glEnable GL_PROGRAM_POINT_SIZE)
+ (glDisable GL_LINE_SMOOTH)
+ void)
+
+;; fields
+
+(bind-val field_vbo VBO*)
+(bind-val field_vao VAO*)
+(bind-val field_sp ShaderProgram)
+
+(bind-func create_field_shader
+  (lambda (vsource:i8* fsource:i8*)
+    (set! field_sp (ShaderProgram_create vsource fsource))))
+
+(impc:aot:do-or-emit
+ (create_field_shader (sys:slurp-file "pbpic2-laptop/xtm/pbpic2-field.vert")
+                      (sys:slurp-file "pbpic2-laptop/xtm/pbpic2-field.frag")))
+
+;; this data should have interleaved the `bases' of the field arrows
+;; (i.e. the grid) in 2D with the ndim (i.e. 3D) field components
+
+(bind-val field_arrows float*)
+
+(impc:aot:do-or-emit
+ (call-as-xtlang
+  (let ((field_arrows_:float* (halloc (* 4 nx ny))))
+    (set! field_arrows field_arrows_))))
+
+;; set base verts (i.e. every second vec2) to regular grid
+(impc:aot:do-or-emit
+ (call-as-xtlang
+  (let ((idx 0))
+    (doloop (i nx)
+      (doloop (j ny)
+        (set! idx (* (+ (* i nx) j) 4))
+        (pset! field_arrows
+               idx
+               (- (* (/ (convert i float) (convert nx float)) 2.0) 1.0))
+        (pset! field_arrows
+               (+ idx 1)
+               (- (* (/ (convert j float) (convert ny float)) 2.0) 1.0)))))))
+
+(bind-func copy_field_xy_to_arrows_buffer
+  (lambda (field:float* scale_factor:float)
+    (let ((field_arrows_idx 0)
+          (field_idx 0)
+          (max_length 0.))
+      ;; (doloop (k (* nxe ny))
+      ;;   (set! field_idx (* k ndim))
+      ;;   (if (> (pref field field_idx) max_length)
+      ;;       (set! max_length
+      ;;             (pref field field_idx)))
+      ;;   (if (> (pref field (+ field_idx 1)) max_length)
+      ;;       (set! max_length
+      ;;             (pref field (+ field_idx 1)))))
+      ;; (if (> max_length 0.25)
+      ;;     (set! scale_factor (* 0.25 (/ 1.0 max_length))))
+      (doloop (i nx)
+        (doloop (j ny)
+          (set! field_arrows_idx (* (+ (* i nx) j) 4))
+          (set! field_idx (+ (* i nxe) j 1))
+          (pset! field_arrows ;; x component
+                 (+ field_arrows_idx 2)
+                 (+ (pref field_arrows field_arrows_idx)
+                    (* scale_factor (pref field field_idx))))
+          (pset! field_arrows ;; x component
+                 (+ field_arrows_idx 3)
+                 (+ (pref field_arrows (+ field_arrows_idx 1))
+                    (* scale_factor (pref field (+ field_idx 1))))))))))
+
+;; not sure why fxyze tends to get massive (junk) numbers in it, but
+;; this hack cleans them out.
+(bind-func remove_guff_from_arrows_buffer
+  (lambda ()
+    (let ((idx 0))
+      (doloop (i nx)
+        (doloop (j ny)
+          (set! idx (* (+ (* i ny) j) 4))
+          ;; (println "idx:" idx)
+          (if (> (fabs (pref field_arrows (+ 2 idx))) 1.0)
+              (pset! field_arrows
+                     (+ 2 idx)
+                     (pref field_arrows (+ 0 idx))))
+          (if (> (fabs (pref field_arrows (+ 3 idx))) 1.0)
+              (pset! field_arrows
+                     (+ 3 idx)
+                     (pref field_arrows (+ 1 idx)))))))))
+
+;; particles
+
+(bind-val particle_tex Texture)
+(bind-val particle_vbo VBO*)
+(bind-val particle_vao VAO*)
+
+(bind-val particle_sp ShaderProgram)
+
+(bind-func create_particle_shader
+  (lambda (vsource:i8* fsource:i8*)
+    (set! particle_sp (ShaderProgram_create vsource fsource))))
+
+(impc:aot:do-or-emit
+ (create_particle_shader (sys:slurp-file "pbpic2-laptop/xtm/pbpic2-particle.vert")
+                         (sys:slurp-file "pbpic2-laptop/xtm/pbpic2-particle.frag")))
+
+;; init all the things
+(impc:aot:do-or-emit
+ (call-as-xtlang
+  (set! particle_vbo (VBO_create part_all (convert (* nvp idimp npmax))))
+  (set! particle_vao (VAO_create))
+  (VAO_bind_attribute particle_vao particle_vbo 0 2 5 0)
+  (VAO_bind_attribute particle_vao particle_vbo 1 3 5 2)
+  (set! particle_tex (Texture_bind_image (Texture_create) "/Users/ben/Code/extempore/assets/images/star.png"))
+  (set! field_vbo (VBO_create field_arrows (convert (* 4 nx ny))))
+  (set! field_vao (VAO_create))
+  (VAO_bind_attribute field_vao field_vbo 0 2)
+  void))
+
+;; draw all the things
+
+(bind-func gl_draw_field
+  (lambda ()
+    (copy_field_xy_to_arrows_buffer fxyze .1)
+    ;; (remove_guff_from_arrows_buffer)
+    (VBO_update_data field_vbo)
+    (glUseProgram field_sp)
+    (VAO_bind_and_draw_arrays field_vao GL_LINES 0 (convert (* 4 nxe ny)))
+    void))
+
+(bind-func gl_draw_particles
+  (lambda ()
+    ;; move particles, update VBO
+    (VBO_update_data particle_vbo)
+    ;; draw the world
+    (let ((texloc (glGetUniformLocation particle_sp "particle_tex"))
+          (nxnyloc (glGetUniformLocation particle_sp "nxny")))
+      (glUseProgram particle_sp)
+      (glUniform1i texloc 0)
+      (glUniform2f nxnyloc (convert nxe) (convert ny)))
+    (VAO_bind_and_draw_arrays particle_vao GL_POINTS 0 (* nvp npmax))
+    void))
+
+(bind-func gl_draw_loop
+  (lambda (time:i64 delta_t:double)
+    (glClear GL_COLOR_BUFFER_BIT)
+    (gl_draw_particles)
+    (gl_draw_field)
+    (glfwPollEvents)
+    (glfwSwapBuffers window)
+    (let ((next_time (+ time (convert (* 44100. delta_t)))))
+      (callback next_time gl_draw_loop next_time delta_t))))
+
+;; start it running
+(gl_draw_loop (now) (/ 1. 60.))
