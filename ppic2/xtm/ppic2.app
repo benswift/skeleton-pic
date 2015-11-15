@@ -1,2 +1,2 @@
--np 1 ./ppic2/xtm/extempore-7099.sh
 -np 1 ./ppic2/xtm/extempore-7097.sh
+-np 1 ./ppic2/xtm/extempore-7095.sh
