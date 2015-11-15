@@ -21,6 +21,21 @@
 (impc:aot:do-or-emit
  (set_nrm_type_size (impc:ir:get-type-size "NodeResponseMsg")))
 
+;; only prints the first of the array items
+(bind-func NRM_Print
+  (lambda (nrm:NodeResponseMsg*)
+    (printf "\nidx: %d \n" (tref nrm 0))
+    (printf "ntime: %d \n" (tref nrm 1))
+    (printf "part: %f, %f, %f, %f \n"  (aref (tref nrm 2) 0) (aref (tref nrm 2) 1) (aref (tref nrm 2) 2) (aref (tref nrm 2) 3))
+    (printf "qe: %f \n" (aref (tref nrm 3) 0))
+    (printf "vxhist: %f, %f \n" (tref (aref (tref nrm 4) 0) 0) (tref (aref (tref nrm 4) 0) 1))
+    (printf "vyhist: %f, %f \n" (tref (aref (tref nrm 5) 0) 0) (tref (aref (tref nrm 5) 0) 1))
+    (printf "npp: %d \n" (tref nrm 6))
+    (printf "noff: %d \n" (tref nrm 7))
+    (printf "nyp: %d \n" (tref nrm 8))
+    (printf "nypmx: %d \n" (tref nrm 9))))
+
+(bind-poly print NRM_Print)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; set problem size ;;
