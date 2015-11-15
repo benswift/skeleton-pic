@@ -288,11 +288,14 @@
 ;;     (pic2_print_energies)))
 
 (bind-func pic2_loop
-  (lambda ()
-    (let ((ntime (pic2_step)))
+  (lambda (time:i64 delta_t:double)
+    (let ((ntime (pic2_step))
+          (next_time (+ time (convert (* 44100. delta_t)))))
       (if (= (% ntime 1000) 0)
           (println "ntime:" ntime))
-      (callback (now) pic2_loop))))
+      (callback next_time pic2_loop next_time delta_t))))
+
+(pic2_loop (now) (/ 1. 30.))
 
 (impc:aot:insert-footer "xtmpic2")
 (define *xtmlib-pic2-loaded* #t)
