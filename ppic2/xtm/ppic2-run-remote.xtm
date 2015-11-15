@@ -117,12 +117,12 @@
       (nn_send REMOTE_SOCKET (cast nrm i8*) NRM_TYPE_SIZE NN_DONTWAIT)
       void)))
 
-(bind-func remote_nonblocking_read_loop
+(bind-func remote_nonblocking_send_loop
   (let ((continue #t))
     (lambda ()
       (remote_response_handler)
       (if continue
-          (callback (+ (now) 500) remote_nonblocking_read_loop)
+          (callback (+ (now) 500) remote_nonblocking_send_loop)
           (begin
             (println "stopping nonblocking_read_loop")
             0)))))
@@ -130,7 +130,7 @@
 ;; start the loop running
 (ppic2_loop)
 
-(remote_nonblocking_read_loop)
+(remote_nonblocking_send_loop)
 
 
 
