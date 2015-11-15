@@ -1,0 +1,41 @@
+(sys:load "libs/external/glfw3.xtm")
+
+(bind-val width i32 (/ 1920 2))
+(bind-val height i32 (- 1080 50))
+
+(bind-val window GLFWwindow*
+  (glfw_init_and_create_interaction_window width height))
+
+(sys:load "libs/external/nanovg.xtm")
+
+(bind-val vg NVGcontext* (nvg_create_context))
+(bind-val pixel_ratio float (glfw_get_pixel_ratio window))
+
+(sys:load "libs/external/gl/gl-objects.xtm")
+(sys:load "libs/external/datavis.xtm")
+
+(call-as-xtlang
+ (nvgCreateFont vg "default" "/Library/Fonts/Arial.ttf")
+ (nvgFontFace vg "default")
+ (nvgFontSize vg 30.))
+
+(bind-func pic2_visuals
+  (let ((rect_colour (NVGcolor 0. 0. 1. .01)))
+    (lambda ()
+      ;; nanovg
+      (nvg_clear)
+      (nvgBeginFrame vg width height pixel_ratio)
+      (nvgResetTransform vg)
+      
+      (nvgEndFrame vg)
+      ;; poll events, swap buffers
+      (glfwPollEvents)
+      (glfwSwapBuffers window))))
+
+(bind-func pic2_visuals_loop
+  (lambda (time:i64 delta_t:double)
+    (pic2_visuals)
+    (let ((next_time (+ time (convert (* 44100. delta_t)))))
+      (callback next_time pic2_visuals_loop next_time delta_t))))
+
+(pic2_visuals_loop (now) (/ 1. 30.))

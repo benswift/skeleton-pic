@@ -1,0 +1,210 @@
+(bind-func cdistr2:[void,float*,float,float,float,float,i32,i32,i32,i32,i32,i32,i32]*
+  (lambda (part vtx vty vdx vdy npx npy idimp nop nx ny ipbc)
+    ;; /* for 2d code, this subroutine calculates initial particle co-ordinates
+    ;;    and velocities with uniform density and maxwellian velocity with drift
+    ;;    part[n][0] = position x of particle n
+    ;;    part[n][1] = position y of particle n
+    ;;    part[n][2] = velocity vx of particle n
+    ;;    part[n][3] = velocity vy of particle n
+    ;;    vtx/vty = thermal velocity of electrons in x/y direction
+    ;;    vdx/vdy = drift velocity of beam electrons in x/y direction
+    ;;    npx/npy = initial number of particles distributed in x/y direction
+    ;;    idimp = size of phase space = 4
+    ;;    nop = number of particles
+    ;;    nx/ny = system length in x/y direction
+    ;;    ipbc = particle boundary condition = (0,1,2,3) =
+    ;;    (none,2d periodic,2d reflecting,mixed reflecting/periodic)
+    ;;    ranorm = gaussian random number with zero mean and unit variance
+    ;; local data                                                            */
+    (let ((j:i32 0) (k:i32 0) (k1:i32 0) (npxy:i32 (* npx npy))
+          (edgelx:float 0.) (edgely:float 0.)
+          (at1:float (/ (convert nx float) (convert npx float)))
+          (at2:float (/ (convert ny float) (convert npy float)))
+          (at3:float 0.)
+          (sum1:float 0.) (sum2:float 0.)
+          (dsum1:double 0.)
+          (dsum2:double 0.))
+      (cond ((= ipbc 2)
+             (set! edgelx 1.)
+             (set! edgely 1.)
+             (set! at1 (/ (convert (- nx 2) float) (convert npx float)))
+             (set! at2 (/ (convert (- ny 2) float) (convert npy float))))
+            ((= ipbc 3)
+             (set! edgelx 1.)
+             (set! at1 (/ (convert (- nx 2) float) (convert npx float)))))
+      ;; /* uniform density profile */
+      (dotimes (k npy)
+        (set! k1 (* idimp npx k))
+        (set! at3 (+ edgely (* at2 (+ (convert k) .5))))
+        (dotimes (j npx)
+          (pset! part (* idimp j k1) (+ edgelx (* at1 (+ (convert j float) .5:f))))
+          (pset! part (+ 1 (* idimp j k1)) at3)))
+      ;; /* maxwellian velocity distribution */
+      (dotimes (j npxy)
+        (pset! part (+ 2 (* idimp j)) (* vtx (convert (ranorm))))
+        (pset! part (+ 3 (* idimp j)) (* vty (convert (ranorm)))))
+      ;; /* add correct drift */
+      (dotimes (j npxy)
+        (set! dsum1 (+ dsum1 (convert (pref part (+ 2 (* idimp j))))))
+        (set! dsum2 (+ dsum2 (convert (pref part (+ 3 (* idimp j)))))))
+      (set! sum1 (convert dsum1))
+      (set! sum2 (convert dsum2))
+      (set! at1 (/ 1.0 (convert npxy float)))
+      (set! sum1 (- (* at1 sum1) vdx))
+      (set! sum2 (- (* at1 sum2) vdy))
+      (dotimes (j npxy)
+        (pset! part (+ 2 (* idimp j)) (- (pref part (+ 2 (* idimp j))) (convert sum1)))
+        (pset! part (+ 3 (* idimp j)) (- (pref part (+ 3 (* idimp j))) (convert sum2)))))))
+
+(bind-func cgpush2l:[void,float*,float*,float,float,float*,i32,i32,i32,i32,i32,i32,i32]*
+  (lambda (part fxy qbm dt ek idimp nop nx ny nxv nyv ipbc)
+    ;; /* for 2d code, this subroutine updates particle co-ordinates and
+    ;;    velocities using leap-frog scheme in time and first-order linear
+    ;;    interpolation in space, with various boundary conditions.
+    ;;    scalar version using guard cells
+    ;;    44 flops/particle, 12 loads, 4 stores
+    ;;    input: all, output: part, ek
+    ;;    equations used are:
+    ;;    vx(t+dt/2) = vx(t-dt/2) + (q/m)*fx(x(t),y(t))*dt,
+    ;;    vy(t+dt/2) = vy(t-dt/2) + (q/m)*fy(x(t),y(t))*dt,
+    ;;    where q/m is charge/mass, and
+    ;;    x(t+dt) = x(t) + vx(t+dt/2)*dt, y(t+dt) = y(t) + vy(t+dt/2)*dt
+    ;;    fx(x(t),y(t)) and fy(x(t),y(t)) are approximated by interpolation from
+    ;;    the nearest grid points:
+    ;;    fx(x,y) = (1-dy)*((1-dx)*fx(n,m)+dx*fx(n+1,m)) + dy*((1-dx)*fx(n,m+1)
+    ;;       + dx*fx(n+1,m+1))
+    ;;    fy(x,y) = (1-dy)*((1-dx)*fy(n,m)+dx*fy(n+1,m)) + dy*((1-dx)*fy(n,m+1)
+    ;;       + dx*fy(n+1,m+1))
+    ;;    where n,m = leftmost grid points and dx = x-n, dy = y-m
+    ;;    part[n][0] = position x of particle n
+    ;;    part[n][1] = position y of particle n
+    ;;    part[n][2] = velocity vx of particle n
+    ;;    part[n][3] = velocity vy of particle n
+    ;;    fxy[k][j][0] = x component of force/charge at grid (j,k)
+    ;;    fxy[k][j][1] = y component of force/charge at grid (j,k)
+    ;;    that is, convolution of electric field over particle shape
+    ;;    qbm = particle charge/mass
+    ;;    dt = time interval between successive calculations
+    ;;    kinetic energy/mass at time t is also calculated, using
+    ;;    ek = .125*sum((vx(t+dt/2)+vx(t-dt/2))**2+(vy(t+dt/2)+vy(t-dt/2))**2)
+    ;;    idimp = size of phase space = 4
+    ;;    nop = number of particles
+    ;;    nx/ny = system length in x/y direction
+    ;;    nxv = second dimension of field arrays, must be >= nx+1
+    ;;    nyv = third dimension of field arrays, must be >= ny+1
+    ;;    ipbc = particle boundary condition = (0,1,2,3) =
+    ;;    (none,2d periodic,2d reflecting,mixed reflecting/periodic)
+    ;; local data                                                            */
+    (let ((j:i32 0) (nn:i32 0) (mm:i32 0) (np:i32 0) (mp:i32 0) (nxv2:i32 (* 2 nxv))
+          (qtm:float (* qbm dt)) (edgelx:float 0.) (edgely:float 0.) (edgerx:float (convert nx)) (edgery:float (convert ny)) (dxp:float 0.) (dyp:float 0.) (amx:float 0.) (amy:float 0.)
+          (dx:float 0.) (dy:float 0.) (vx:float 0.) (vy:float 0.)
+          (sum1:double 0.))
+      ;; /* set boundary values */
+      (cond ((= ipbc 2)
+             (set! edgelx 1.)
+             (set! edgely 1.)
+             (set! edgerx (convert (- nx 1)))
+             (set! edgery (convert (- ny 1))))
+            ((= ipbc 3)
+             (set! edgelx 1.)
+             (set! edgerx (convert (- nx 1)))))
+      (dotimes (j nop)
+        ;; /* find interpolation weights */
+        (set! nn (convert (pref part (* idimp j))))
+        (set! mm (convert (pref part (+ 1 (* idimp j)))))
+        (set! dxp (- (pref part (* idimp j)) (convert nn)))
+        (set! dyp (- (pref part (+ 1 (* idimp j))) (convert mm)))
+        (set! nn (* 2 nn))
+        (set! mm (* nxv2 mm))
+        (set! amx (- 1.0 dxp))
+        (set! mp (+ mm nxv2))
+        (set! amy (- 1.0 dyp))
+        (set! np (+ nn 2))
+        ;; /* find acceleration */
+        (set! dx
+              (+ (* dyp (+ (* dxp (pref fxy (+ np mp))) (* amx (pref fxy (+ nn mp)))))
+                 (* amy (+ (* dxp (pref fxy (+ np mm))) (* amx (pref fxy (+ nn mm)))))))
+        (set! dy
+              (+ (* dyp (+ (* dxp (pref fxy (+ 1 np mp))) (* amx (pref fxy (+ 1 nn mp)))))
+                 (* amy (+ (* dxp (pref fxy (+ 1 np mm))) (* amx (pref fxy (+ 1 nn mm)))))))
+        ;; /* new velocity */
+        (set! vx (pref part (+ 2 (* idimp j))))
+        (set! vy (pref part (+ 3 (* idimp j))))
+        (set! dx (+ vx (* qtm dx)))
+        (set! dy (+ vy (* qtm dy)))
+        ;; /* average kinetic energy */
+        (set! vx (+ vx dx))
+        (set! vy (+ vy dy))
+        (set! sum1 (+ sum1 (convert (* vx vx)) (convert (* vy vy))))
+        (pset! part (+ 2 (* idimp j)) dx)
+        (pset! part (+ 3 (* idimp j)) dy)
+        ;; /* new position */
+        (set! dx (+ (pref part (* idimp j)) (* dx dt)))
+        (set! dy (+ (pref part (+ 1 (* idimp j))) (* dy dt)))
+        ;; /* periodic boundary conditions */
+        (cond ((= ipbc 1)
+               (if (< dx edgelx) (set! dx (+ dx edgerx)))
+               (if (>= dx edgerx) (set! dx (- dx edgerx)))
+               (if (< dy edgely) (set! dy (+ dy edgery)))
+               (if (>= dy edgery) (set! dy (- dy edgery))))
+              ;; /* reflecting boundary conditions */
+              ((= ipbc 2)
+               (if (or (< dx edgelx) (>= dx edgerx))
+                   (set! dx (pref part (* idimp j)))
+                   (pset! part (+ (* idimp j) 2) (* -1. (pref part (+ (* idimp j) 2)))))
+               (if (or (< dy edgely) (>= dy edgery))
+                   (set! dy (pref part (+ 1 (* idimp j))))
+                   (pset! part (+ (* idimp j) 3) (* -1. (pref part (+ (* idimp j) 3))))))
+              ;; /* mixed reflecting/periodic boundary conditions */
+              ((= ipbc 3)
+               (if (or (< dx edgelx) (>= dx edgerx))
+                   (set! dx (pref part (* idimp j)))
+                   (pset! part (+ (* idimp j) 2) (* -1. (pref part (+ (* idimp j) 2)))))
+               (if (< dy edgely) (set! dy (+ dy edgery)))
+               (if (>= dy edgery) (set! dy (- dy edgery))))))
+      ;; /* set new position */
+      (pset! part (* idimp j) dx)
+      (pset! part (+ 1 (* idimp j)) dy)
+      (pset! ek 0 (+(pref ek 0) (convert (* 0.125 sum1)))))
+    void))
+
+(bind-func xt_cgpost2l:[void,float*,float*,float,i32,i32,i32,i32]*
+  (lambda (part q qm nop idimp nxv nyv)
+    ;; /* for 2d code, this subroutine calculates particle charge density
+    ;;    using first-order linear interpolation, periodic boundaries
+    ;;    scalar version using guard cells
+    ;;    17 flops/particle, 6 loads, 4 stores
+    ;;    input: all, output: q
+    ;;    charge density is approximated by values at the nearest grid points
+    ;;    q(n,m)=qm*(1.-dx)*(1.-dy)
+    ;;    q(n+1,m)=qm*dx*(1.-dy)
+    ;;    q(n,m+1)=qm*(1.-dx)*dy
+    ;;    q(n+1,m+1)=qm*dx*dy
+    ;;    where n,m = leftmost grid points and dx = x-n, dy = y-m
+    ;;    part[n][0] = position x of particle n
+    ;;    part[n][1] = position y of particle n
+    ;;    q[k][j] = charge density at grid point j,k
+    ;;    qm = charge on particle, in units of e
+    ;;    nop = number of particles
+    ;;    idimp = size of phase space = 4
+    ;;    nxv = first dimension of charge array, must be >= nx+1
+    ;;    nyv = second dimension of charge array, must be >= ny+1
+    ;; local data                                                            */
+    (let ((j:i32 0) (nn:i32 0) (mm:i32 0) (np:i32 0) (mp:i32 0)
+          (dxp:float 0.) (dyp:float 0.) (amx:float 0.) (amy:float 0.))
+      (dotimes (j nop)
+        ;; /* find interpolation weights */
+        (set! nn (convert (pref part (* idimp j))))
+        (set! mm (convert (pref part (+ 1 (* idimp j)))))
+        (set! dxp (* qm (- (pref part (* idimp j)) (convert nn))))
+        (set! dyp (- (pref part (+ 1 (* idimp j))) (convert mm)))
+        (set! mm (* nxv mm))
+        (set! amx (- qm dxp))
+        (set! mp (+ mm nxv))
+        (set! amy (- 1.0 dyp))
+        (set! np (+ nn 1))
+        ;; /* deposit charge */
+        (pset! q (+ np mp) (+ (pref q (+ np mp)) (* dxp dyp)))
+        (pset! q (+ nn mp) (+ (pref q (+ nn mp)) (* amx dyp)))
+        (pset! q (+ np mm) (+ (pref q (+ np mm)) (* dxp amy)))
+        (pset! q (+ nn mm) (+ (pref q (+ nn mm)) (* amx amy)))))))
