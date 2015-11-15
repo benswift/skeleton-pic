@@ -1,7 +1,7 @@
 (sys:load "libs/external/glfw3.xtm")
 
-(bind-val width i32 (/ 1440 2))
-(bind-val height i32 850)
+(bind-val width i32 (/ 1920 2))
+(bind-val height i32 (- 1080 50))
 
 (bind-val window GLFWwindow*
   (glfw_init_and_create_interaction_window width height))
