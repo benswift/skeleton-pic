@@ -33,7 +33,8 @@
     (printf "npp: %d \n" (tref nrm 6))
     (printf "noff: %d \n" (tref nrm 7))
     (printf "nyp: %d \n" (tref nrm 8))
-    (printf "nypmx: %d \n" (tref nrm 9))))
+    (printf "nypmx: %d \n" (tref nrm 9))
+    void))
 
 (bind-poly print NRM_Print)
 
