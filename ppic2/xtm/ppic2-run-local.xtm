@@ -30,11 +30,13 @@
 
 (bind-val LOCAL_SOCKET_ARRAY |64,i32|)
 (bind-val LOCAL_SOCKET_ARRAY_SIZE i32 64)
-;; (bind-val LOCAL_START_PORT i32 13000)
-(bind-val LOCAL_START_PORT i32 9000)
+(bind-val LOCAL_START_PORT i32 13000)
+;; (bind-val LOCAL_START_PORT i32 9000)
+
 
 (bind-val REMOTE_LOCATION_COUNT i64 1)
-(bind-val REMOTE_NODES_PER_LOCATION i64 1)
+(bind-val REMOTE_NODES_PER_LOCATION i64 32)
+;; holds boolean values as to whether we have received this NRM element or not
 (bind-val NRM_ARRAY |32,NodeResponseMsg|) ;; size should be at least LOCAL_SOCKET_ARRAY_SIZE
 
 (or (sys:load "ppic2/xtm/ppic2-visuals.xtm" 'quiet)

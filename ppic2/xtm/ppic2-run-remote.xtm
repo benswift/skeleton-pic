@@ -88,7 +88,7 @@
 
 (bind-func remote_response_handler
   (let ((nrm:NodeResponseMsg* (zalloc)))
-    (lambda (buf:i8* buflen:i64)
+    (lambda ()
       ;; stuff in the constants
       (tset! nrm 0 (- kstrt 1))
       (tset! nrm 1 ntime)
@@ -118,16 +118,9 @@
       void)))
 
 (bind-func remote_nonblocking_read_loop
-  (let ((buf:i8* (zalloc NRM_TYPE_SIZE))
-        (continue #t))
+  (let ((continue #t))
     (lambda ()
-      (if (< REMOTE_SOCKET 0)
-          (nn_println_strerror)
-          (let ((nbytes (nn_recv REMOTE_SOCKET buf NRM_TYPE_SIZE NN_DONTWAIT)))
-            ;; if we get some bytes, trigger the callback
-            (if (> nbytes 0)
-                (remote_response_handler buf (convert nbytes))
-                void)))
+      (remote_response_handler)
       (if continue
           (callback (+ (now) 500) remote_nonblocking_read_loop)
           (begin
@@ -138,4 +131,6 @@
 (ppic2_loop)
 
 (remote_nonblocking_read_loop)
+
+
 
