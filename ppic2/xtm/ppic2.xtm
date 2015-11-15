@@ -13,7 +13,7 @@
 ;; To use this library in Extempore, first get the (slightly modified)
 ;; basic pic2 serial codes from
 
-;; https://github.com/benswift/pic2
+;; https://github.com/benswift/skeleton-pic
 
 ;; then build thd dylib with `make shared'
 

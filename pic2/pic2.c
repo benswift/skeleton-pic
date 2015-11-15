@@ -53,7 +53,7 @@ float complex *sct = NULL;
 /* npicy = scratch array for reordering particles */
 int *npicy = NULL;  
 
-int main(int argc, char *argv[]) {
+int pic2_main(int argc, char *argv[]) {
   
   /* declare and initialize timing data */
   float time;
