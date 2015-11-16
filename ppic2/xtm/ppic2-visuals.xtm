@@ -1,7 +1,7 @@
 (sys:load "libs/external/glfw3.xtm")
 
-(bind-val width i32 800)
-(bind-val height i32 600)
+(bind-val width i32 (/ 1440 2))
+(bind-val height i32 (- 900 50))
 
 (bind-val window GLFWwindow*
   (glfw_init_and_create_interaction_window width height))
@@ -153,7 +153,7 @@
 @param size - point size"
   (let ((stroke_width 4.:f)
         (padding 20.)
-        (colour (NVGcolor 1. 1. 1. .5)))
+        (colour (NVGcolor 1. .3 .6 1.)))
     (lambda (vg bounds:Rect* points:float* npoints:i64 size:float)
       (if (< npoints 1)
           (begin (println "npoints must be at least 1 for scatter_points") -1)
@@ -161,17 +161,25 @@
                 (y (+ (tref bounds 1) padding))
                 (w (- (tref bounds 2) (* 2. padding)))
                 (h (- (tref bounds 3) (* 2. padding)))
-                (i 0))
+                (i 0)
+                (part_idx 0)
+                (circle_size 0.))
             (nvgStrokeWidth vg stroke_width)
-            (_nvgStrokeColor vg colour)
             ;; add circles to path
             (dotimes (i npoints)
+              (set! part_idx (* i 4))
+              (set! circle_size (* size (sqrt (+ (* (pref points (+ part_idx 2))
+                                                    (pref points (+ part_idx 2)))
+                                                 (* (pref points (+ part_idx 3))
+                                                    (pref points (+ part_idx 3)))))))
+              (tset! colour 0 (tset! colour 0 (% (/ (convert (* 10 i)) (convert npoints)) 1.0)))
+              (_nvgStrokeColor vg colour)
               (nvgBeginPath vg)
               (nvgEllipse vg
-                          (+ x (* w (/ (pref points (* i (convert 4 i64))) (convert nx))))
-                          (+ y (* h (- 1. (/ (pref points (+ (* i (convert 4 i64)) 1)) (convert ny)))))
-                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .000005))) size)
-                          (+ (* 2. (cos (* (convert (+ (convert i i64) (now))) .000002))) size))
+                          (+ x (* w (/ (pref points part_idx) (convert nx))))
+                          (+ y (* h (- 1. (/ (pref points (+ part_idx 1)) (convert ny)))))
+                          circle_size
+                          circle_size)
               (nvgStroke vg))
             0)))))
 
@@ -254,25 +262,30 @@
         (tset! sum_hb 1 (* (tref sum_hb 1) gain))))))
 
 (bind-func ppic2_visuals_histogram_draw
-  (let ((gain .00004)
+  (let ((gain .0001)
         (font_size:float 24.)
         (bounds (Rect 0. 0. 0. 0.))
-        (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT))))
+        (hist_height:float (/ (convert height) (convert REMOTE_LOCATION_COUNT)))
+        (colour:NVGcolor* null))
     (lambda (idx:i32)
       ;; nvg labels
       (dv_draw_title.font_size font_size)
-      (dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.) 2.) float))
+      (dv_draw_line.stroke_width (convert (+ (* (cos (* .00001 (convert (now)))) 1.5) 3.) float))
       ;; vx histogram
-      (tfill! bounds (* .5 (convert width)) (* (convert idx) hist_height) (* .25 (convert width)) hist_height)
+      (tfill! bounds (* .5 (convert width)) 0. (* .5 (convert width)) (* .5 (convert height)))
       (dv_draw_title vg bounds "vx")
       (dv_draw_axes_2D vg bounds)
       (ppic2_accum_vxhist NRM_VHIST_BIN_COUNT gain)
+      (set! colour (dv_draw_line.colour:NVGcolor*))
+      (tfill! colour .3 .93 .34 1.)
       (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 4) 0) float*) NRM_VHIST_BIN_COUNT)
       ;; vx histogram
-      (tset! bounds 0 (* .75 (convert width)))
+      (tset! bounds 1 (* .5 (convert height)))
       (dv_draw_title vg bounds "vy")
+      (dv_draw_line.stroke_width (convert (+ (* (cos (* .000013 (convert (now)))) 1.5) 3.) float))
       (dv_draw_axes_2D vg bounds)
       (ppic2_accum_vyhist NRM_VHIST_BIN_COUNT gain)
+      (tfill! colour .1 .4 .94 1.)
       (dv_draw_line vg bounds (cast (aref-ptr (tref-ptr (aref-ptr NRM_ARRAY 0) 5) 0) float*) NRM_VHIST_BIN_COUNT)
       void)))
 
