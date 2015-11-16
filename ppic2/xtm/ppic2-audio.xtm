@@ -1,0 +1,115 @@
+(sys:load "libs/external/instruments_ext.xtm")
+(sys:load "/Users/ben/Code/xtm/lib/benlib-scm.xtm")
+(ipc:load "utility" "/Users/ben/Code/xtm/lib/benlib-scm.xtm")
+(ipc:load "utility" "libs/core/pc_ivl.xtm")
+(sys:load "libs/external/audiobuffer.xtm")
+
+;; load audio sample (put your stereo aiff file here!)
+(bind-val ppic2_audiobuffer AudioBuffer* (AudioBuffer_from_file "assets/samples/cello-suite-1-prelude.aiff"))
+
+(call-as-xtlang
+ (println ppic2_audiobuffer))
+
+(bind-val ppic2_granulator [SAMPLE,i64,i64,SAMPLE]* (granulator_c 2))
+
+(bind-func gran_set_iot1
+  (lambda (iot)
+    (ppic2_granulator.iot:i64 iot)))
+
+(bind-func gran_set_rate_range
+  (lambda (low high)
+    (ppic2_granulator.rlo:double low)
+    (ppic2_granulator.rhi:double high)))
+
+(bind-func gran_set_duration_range
+  (lambda (low high)
+    (ppic2_granulator.dlo:double low)
+    (ppic2_granulator.dhi:double high)))
+
+(bind-func gran_set_pan_range
+  (lambda (low high)
+    (ppic2_granulator.plo:float low)
+    (ppic2_granulator.phi:float high)))
+
+(bind-func gran_set_amplitude_range
+  (lambda (low high)
+    (ppic2_granulator.alo:float low)
+    (ppic2_granulator.ahi:float high)))
+
+(bind-func gran_set_mix_range
+  (lambda (mix)
+    (ppic2_granulator.wet:float mix)))
+
+(gran_set_iot1 1000)
+(gran_set_rate_range 90.9 100.1)
+(gran_set_duration_range 100 2000)
+(gran_set_pan_range 0. 1.)
+(gran_set_amplitude_range .1 .4)
+(gran_set_mix_range .98)
+
+;; the rest of the instruments
+
+(bind-sampler kit sampler_note_hermite_c sampler1_fx)
+(sm-load-map kit *sm-NI-synthetic-kit* 0)
+(sm-load-map kit *sm-NI-NuPop-kit* 1)
+;; (sm-load-map kit *sm-NI-jazz-kit* 2)
+
+(bind-sampler cello sampler_note_hermite_c sampler2_fx)
+(sm-load-map cello *sm-SSO-solo-cello* 0)
+(sm-load-map cello *sm-SSO-celli* 1)
+
+(bind-instrument fmpad fmpad_note_c fmpad_fx)
+
+(fmpad_fx.wet 0.4)
+(fmpad_fx.cwet 1.0)
+(fmpad_fx.cfb .8)
+(fmpad_fx.fb 0.6)
+(fmpad_fx.res 0.7)
+
+(fmpad.attack 100000)
+(fmpad.release 100000)
+
+(kit.attack 20)
+(sampler1_fx.wet .01)
+(sampler1_fx.fb .2)
+
+(cello.attack 1)
+(cello.release 5000)
+(cello.sustain)
+
+(sampler2_fx.wet .2)
+(sampler2_fx.fb .6)
+
+;; synths
+(ipc:bind-func "utility" 'fmsynth)
+(ipc:bind-func "utility" 'fmpad)
+(ipc:bind-func "utility" 'fmpad_fx)
+(ipc:bind-func "utility" 'subbass)
+;; samplers
+(ipc:bind-func "utility" 'cello)
+(ipc:bind-func "utility" 'kit)
+(ipc:bind-func "utility" 'sampler1_fx)
+(ipc:bind-func "utility" 'sampler2_fx)
+;; granulator
+
+(ipc:bind-func "utility" 'gran_set_iot1)
+(ipc:bind-func "utility" 'gran_set_rate_range)
+(ipc:bind-func "utility" 'gran_set_duration_range)
+(ipc:bind-func "utility" 'gran_set_pan_range)
+(ipc:bind-func "utility" 'gran_set_amplitude_range)
+(ipc:bind-func "utility" 'gran_set_mix_range)
+
+;; DSP
+(ipc:bind-func "utility" 'dsp)
+(ipc:audio-setup "utility")
+
+(bind-func dsp:DSP
+  (lambda (in time chan dat)
+    (+ (* 0.5 (fmsynth in time chan dat))
+       (* 1.0 (subbass in time chan dat))
+       (* 0.3 (fmpad in time chan dat))
+       (* 6.0 (cello in time chan dat))
+       (* 1.0 (kit in time chan dat))
+       (* 3.0 (ppic2_granulator chan time (AudioBuffer_read_looped ppic2_audiobuffer chan))))))
+
+(dsp:set! dsp)
