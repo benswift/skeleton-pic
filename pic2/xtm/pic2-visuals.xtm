@@ -20,21 +20,19 @@
  (nvgFontSize vg 30.))
 
 (bind-func pic2_visuals
-  (let ((rect_colour (NVGcolor 0. 0. 1. .01)))
-    (lambda ()
-      ;; nanovg
-      (nvg_clear)
-      (nvgBeginFrame vg width height pixel_ratio)
-      (nvgResetTransform vg)
-      
-      (nvgEndFrame vg)
-      ;; poll events, swap buffers
-      (glfwPollEvents)
-      (glfwSwapBuffers window))))
+  (lambda ()
+    void))
 
 (bind-func pic2_visuals_loop
   (lambda (time:i64 delta_t:double)
+    (nvg_clear)
+    (nvgBeginFrame vg width height pixel_ratio)
+    (nvgResetTransform vg)
     (pic2_visuals)
+    (nvgEndFrame vg)
+    ;; poll events, swap buffers
+    (glfwPollEvents)
+    (glfwSwapBuffers window)
     (let ((next_time (+ time (convert (* 44100. delta_t)))))
       (callback next_time pic2_visuals_loop next_time delta_t))))
 
