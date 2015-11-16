@@ -97,7 +97,7 @@
       (tset! nrm 8 (pref nyp_ptr 0))
       (tset! nrm 9 (pref nypmx_ptr 0))
       ;; fill the arrays
-      (let ((hist_range 100.)
+      (let ((hist_range 20.)
             (part_arr (tref-ptr nrm 2))
             (part_stride 20)
             (qe_arr (tref-ptr nrm 3))
